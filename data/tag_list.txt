@@ -1,0 +1,405 @@
+air conditioner
+airplane
+alarm clock
+antenna
+apple
+apron
+armchair
+trash can
+avocado
+awning
+baby buggy
+backpack
+handbag
+suitcase
+ball
+balloon
+banana
+bandanna
+banner
+barrel
+baseball base
+baseball
+baseball bat
+baseball cap
+baseball glove
+basket
+bath mat
+bath towel
+bathtub
+beanie
+bear
+bed
+bedspread
+cow
+beef (food)
+beer bottle
+bell
+bell pepper
+belt
+belt buckle
+bench
+bicycle
+visor
+billboard
+bird
+birthday cake
+blackboard
+blanket
+blender
+blinker
+blouse
+blueberry
+boat
+bolt
+book
+boot
+bottle
+bow (decorative ribbons)
+bow-tie
+bowl
+box
+bracelet
+bread
+bridal gown
+broccoli
+bucket
+bun
+buoy
+bus (vehicle)
+butter
+button
+cab (taxi)
+cabinet
+cake
+calendar
+camera
+can
+candle
+candle holder
+cap (headwear)
+bottle cap
+car (automobile)
+railcar (part of a train)
+carrot
+tote bag
+cat
+cauliflower
+celery
+cellular telephone
+chair
+chandelier
+choker
+chopping board
+chopstick
+Christmas tree
+cigarette
+cistern
+clock
+clock tower
+coaster
+coat
+coffee maker
+coffee table
+computer keyboard
+condiment
+cone
+control
+cookie
+cooler (for food)
+cork (bottle plug)
+edible corn
+cowboy hat
+crate
+crossbar
+crumb
+cucumber
+cup
+cupboard
+cupcake
+curtain
+cushion
+deck chair
+desk
+dining table
+dish
+dishtowel
+dishwasher
+dispenser
+Dixie cup
+dog
+dog collar
+doll
+doorknob
+doughnut
+drawer
+dress
+dress suit
+dresser
+duck
+duffel bag
+earphone
+earring
+egg
+refrigerator
+elephant
+fan
+faucet
+figurine
+fire alarm
+fire engine
+fire extinguisher
+fireplace
+fireplug
+fish
+flag
+flagpole
+flip-flop (sandal)
+flower arrangement
+fork
+frisbee
+frying pan
+giraffe
+glass (drink container)
+glove
+goggles
+grape
+green bean
+green onion
+grill
+guitar
+hairbrush
+ham
+hair dryer
+hand towel
+handle
+hat
+headband
+headboard
+headlight
+helmet
+hinge
+home plate (baseball)
+fume hood
+hook
+horse
+hose
+polar bear
+iPod
+jacket
+jar
+jean
+jersey
+key
+kitchen sink
+kite
+knee pad
+knife
+knob
+ladder
+lamb (animal)
+lamp
+lamppost
+lampshade
+lanyard
+laptop computer
+latch
+lemon
+lettuce
+license plate
+life buoy
+life jacket
+lightbulb
+lime
+log
+speaker (stero equipment)
+magazine
+magnet
+mailbox (at home)
+manhole
+map
+marker
+mask
+mast
+mattress
+microphone
+microwave oven
+milk
+minivan
+mirror
+monitor (computer equipment) computer monitor
+motor
+motor scooter
+motorcycle
+mound (baseball)
+mouse (computer equipment)
+mousepad
+mug
+mushroom
+napkin
+necklace
+necktie
+newspaper
+notebook
+nut
+oar
+onion
+orange (fruit)
+ottoman
+oven
+paddle
+painting
+pajamas
+pan (for cooking)
+paper plate
+paper towel
+parking meter
+pastry
+pear
+pen
+pencil
+pepper
+person
+piano
+pickle
+pickup truck
+pillow
+pineapple
+pipe
+pitcher (vessel for liquid)
+pizza
+place mat
+plate
+pole
+polo shirt
+pop (soda)
+poster
+pot
+flowerpot
+potato
+printer
+propeller
+quilt
+radiator
+rearview mirror
+reflector
+remote control
+ring
+rubber band
+plastic bag
+saddle (on an animal)
+saddle blanket
+sail
+salad
+saltshaker
+sandal (type of shoe)
+sandwich
+saucer
+sausage
+scale (measuring instrument)
+scarf
+scissors
+scoreboard
+scrubbing brush
+sheep
+shirt
+shoe
+shopping bag
+short pants
+shoulder bag
+shower head
+shower curtain
+signboard
+sink
+skateboard
+ski
+ski boot
+ski parka
+ski pole
+skirt
+snowboard
+soap
+soccer ball
+sock
+sofa
+soup
+spatula
+spectacles
+spoon
+statue (sculpture)
+steering wheel
+stirrup
+stool
+stop sign
+brake light
+stove
+strap
+straw (for drinking)
+strawberry
+street sign
+streetlight
+suit (clothing)
+sunglasses
+surfboard
+sweater
+sweatshirt
+swimsuit
+table
+tablecloth
+tag
+taillight
+tank (storage vessel)
+tank top (clothing)
+tape (sticky cloth or paper)
+tarp
+teapot
+teddy bear
+telephone
+telephone pole
+television set
+tennis ball
+tennis racket
+thermostat
+tinfoil
+tissue paper
+toaster
+toaster oven
+toilet
+toilet tissue
+tomato
+tongs
+toothbrush
+toothpaste
+toothpick
+cover
+towel
+towel rack
+toy
+traffic light
+trailer truck
+train (railroad vehicle)
+tray
+tripod
+trousers
+truck
+umbrella
+underwear
+urinal
+vase
+vent
+vest
+wall socket
+wallet
+watch
+water bottle
+watermelon
+weathervane
+wet suit
+wheel
+windshield wiper
+wine bottle
+wineglass
+blinder (for horses)
+wristband
+wristlet
+zebra

@@ -1,0 +1,4 @@
+generate negative samples
+python .\generate_neg_captions.py --image-dir C:\data\SA1B_split\SA1B_5_threshold --vlm-base-url https://ai.stackway.org/v1 --vlm-model gpt-4o-mini --vlm-api-key sk-kq13YxThUEIiqaHOdIzqcFTnkSVICN4Qe4fbgwl94YKnUvcx
+
+tile split 
