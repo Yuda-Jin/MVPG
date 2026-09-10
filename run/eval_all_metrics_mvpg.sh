@@ -151,7 +151,10 @@ fi
 stage_header "Stage 4/5: AMBER (generative)"
 OUTPUT_DIR=$OUT_ROOT/amber
 if [ -d "$IMAGE_DIR_AMBER" ]; then
-    python -m spacy download en_core_web_lg
+    # en_core_web_lg 已安装则跳过；未安装时走 ghfast 镜像下载，避免 GitHub 直连超时
+    if ! python -c "import spacy; spacy.load('en_core_web_lg')" >/dev/null 2>&1; then
+        pip install "https://ghfast.top/https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl"
+    fi
 
     python ./eval_llava_rlhf_coco/AMBER_generate.py \
         "${MVPG_ARGS[@]}" \

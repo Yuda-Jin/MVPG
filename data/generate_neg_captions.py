@@ -100,22 +100,28 @@ def generate_neg_captions(path, base_url, model_name, api_key, n_neg=4):
         "You are annotating a dataset for vision-language hallucination detection.\n"
         "Step 1 (internal, do NOT write it out): infer the scene — the setting, environment, and the objects that are present.\n"
         f"Step 2: write {n_neg} DISTINCT hallucination descriptions that satisfy ALL of the following:\n"
-        "  1. They sound natural and plausible in THIS scene (correct environment, likely co-occurring objects);\n"
-        "  2. Each mentions a concrete object/entity that is actually NOT present in the image;\n"
-        "  3. They are concise but complete sentences (subject + verb), not bare nouns.\n"
-        "Do NOT mention any object that actually appears in the image.\n"
+        "  1. Each is a NATURAL, DETAILED image caption of THIS scene: 2-4 sentences in the "
+        "fluent, neutral style of a vision-language model (e.g. starting with 'The image "
+        "features...' or 'In this image, ...'). It should mention the correct setting and "
+        "the present objects as context, exactly like a real model would describe the picture;\n"
+        "  2. Woven into that otherwise-plausible caption, each contains ONE concrete "
+        "object/entity that is actually NOT present in the image. Describe it as if it were "
+        "visible — do NOT say it is missing;\n"
+        "  3. All descriptions must be about the SAME scene and be roughly the SAME length "
+        "and style as each other and as a real model caption. NOT single short sentences or "
+        "bare nouns;\n"
+        "  4. The inserted hallucinated object must NOT appear anywhere in the image.\n"
         f"Output ONLY a raw JSON array of exactly {n_neg} strings. "
         "No keys, no scene summary, no explanation, no markdown, nothing else.\n\n"
-        "Example 1 (a kitchen with a stove, pots and a sink, but no kettle, fruit or refrigerator):\n"
-        '  ["A silver kettle is boiling on the stove.", '
-        '"A bowl of fresh fruit sits on the counter.", '
-        '"A white refrigerator stands in the corner.", '
-        '"A wooden cutting board lies next to the sink."]\n'
-        "Example 2 (a city street with cars and pedestrians, but no bicycle, hydrant or traffic light):\n"
-        '  ["A person is riding a bicycle along the curb.", '
-        '"A red fire hydrant stands by the sidewalk.", '
-        '"A traffic light hangs above the intersection.", '
-        '"A parked motorcycle leans against the wall."]'
+        "Example (a kitchen with a stove, pots and a sink, but no kettle, fruit or refrigerator):\n"
+        '  ["The image shows a tidy kitchen with a stainless steel stove and a deep sink. '
+        'A silver kettle is boiling on the stove, and a bowl of fresh fruit sits on the counter beside it.", '
+        '"In this kitchen, a stove and a sink are visible against the tiled wall. '
+        'A white refrigerator stands in the corner next to a wooden cutting board lying by the sink.", '
+        '"The kitchen contains a stove, several pots and a sink. '
+        'A bowl of fresh fruit rests on the counter, and a silver kettle sits on the stove.", '
+        '"This is a kitchen with a stove, pots and a sink. '
+        'A wooden cutting board lies next to the sink, while a white refrigerator stands in the corner."]'
     )
     payload = {
         "model": model_name,
@@ -128,7 +134,7 @@ def generate_neg_captions(path, base_url, model_name, api_key, n_neg=4):
             ],
         }],
         "temperature": 0.7,
-        "max_tokens": 1024,
+        "max_tokens": 2048,
     }
     if "deepseek" in model_name.lower():
         # DeepSeek V4 默认开启思考模式：思维链全部输出到 reasoning_content，

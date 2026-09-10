@@ -6,10 +6,11 @@ MVPG RL 训练（自研，不依赖 verl）。
   §3.3  策略梯度：REINFORCE + 组内归一化基线（组 = 同图多区域视角：
         advantage = (r_i - mean(r)) / (std(r) + eps)，消除组间奖励量纲差异），
         梯度只回传投影层 mm_projector，视觉编码器与 LLM 冻结。
+        另加对原模型（训练前 mm_projector）的 KL 正则（仅主图行），防止策略
+        偏离语言分布坠入「堆词/重复句式」低质量吸引子。
   §3.2  区域对比接地奖励 RCGR：
         r_i = alpha * [sim(a_i, R_i) - max_{j!=i} sim(c_j, R_i)]
             + beta  * [sim(a_i, R_i) - sim(b, R_i)]
-            - eta   * len(a_i)
         sim = FG-CLIP 文本/区域特征余弦相似度。
 
 数据格式（image-dir 下每个子目录 = 一张主图的一组网格子图视角）：
@@ -87,7 +88,7 @@ def _select_neg_sim(neg_feats, img_feat, neg_mode):
 
 
 def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
-                          alpha=1.0, beta=0.5, eta=0.0, neg_mode="first",
+                          alpha=1.0, beta=0.5, neg_mode="first",
                           reg_weight=0.0):
     """组级 RCGR 奖励。region_paths/captions 一一对应（同图 K 个子图视角）。
     返回 (list[float], float)：奖励列表（长度 K）与区域结构正则均值
@@ -133,36 +134,13 @@ def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
         # 缺席难负例基线（图级负例池）
         sim_neg = _select_neg_sim(neg_feats, img_feats[i], neg_mode) if len(neg_feats) > 0 else 0.0
 
-        r = alpha * (sim_self - sim_others) + beta * (sim_self - sim_neg) - eta * len(captions[i])
+        r = alpha * (sim_self - sim_others) + beta * (sim_self - sim_neg)
         if reg_rows is not None:
             r = r - reg_weight * reg_rows[i].item()
         rewards.append(r)
 
     reg_mean = reg_rows.mean().item() if reg_rows is not None else float("nan")
     return rewards, reg_mean
-
-
-def compute_main_reward(fg, main_path, caption, neg_captions, device,
-                        beta=0.5, eta=0.0, neg_mode="first"):
-    """主图训练进度指标（只汇报，不参与梯度/优化）。
-
-    r_main = sim(caption, 主图) - beta * sim(负例, 主图) - eta * len(caption)
-
-    与训练奖励的区别：去掉跨区域竞争项——主图没有「同层级的其它视角」，
-    该指标衡量模型输出文本相对缺席负例的余量（margin）。
-    负例是固定文本，sim(负例,主图) 对同组恒定，因此 r_main 上升
-    ⇔ 描述更贴主图或更远离负例，适合作为跨步训练进度信号。
-    """
-    img_feat = fg.encode_image_paths([main_path])[0]               # (D,)
-    txt_feat = fg.encode_texts([caption])[0]                       # (D,)
-    neg_captions = list(neg_captions or [])
-    sim_self = _cos(txt_feat, img_feat)
-    if neg_captions:
-        neg_feats = fg.encode_texts(neg_captions)                  # (N, D)
-        sim_neg = _select_neg_sim(neg_feats, img_feat, neg_mode)
-    else:
-        sim_neg = 0.0
-    return sim_self - beta * sim_neg - eta * len(caption)
 
 
 # =============================================================================
@@ -375,9 +353,10 @@ def train(args):
     print(f"  model  : {args.model_name}")
     print(f"  data   : {args.image_dir}")
     print(f"  device : {device}")
-    print(f"  RCGR   : alpha={args.alpha} beta={args.beta} eta={args.eta} neg_mode={args.neg_mode} "
+    print(f"  RCGR   : alpha={args.alpha} beta={args.beta} neg_mode={args.neg_mode} "
           f"use_main_image={args.use_main_image}")
-    print(f"  batch  : groups_per_step={args.groups_per_step} reg_weight={args.reg_weight}")
+    print(f"  batch  : groups_per_step={args.groups_per_step} reg_weight={args.reg_weight} "
+          f"kl_weight={args.kl_weight}")
     print("=" * 78)
 
     groups = load_groups(args.image_dir)
@@ -391,6 +370,11 @@ def train(args):
         args.model_name, args.bits, args.fp16, args.bf16, device
     )
     model.config.use_cache = True  # 生成阶段需要
+
+    # 参考策略（原模型）：训练前的 mm_projector 权重，用于主图行的 KL 正则。
+    # 深拷贝到内存，避免后续训练权重变化时被覆盖（KL 项据此计算分布偏离）。
+    ref_projector_sd = {k: v.detach().clone()
+                        for k, v in model.get_model().mm_projector.state_dict().items()}
 
     # FG-CLIP（用于奖励）
     fg = _load_fgclip(args.fgclip_root, device)
@@ -407,9 +391,15 @@ def train(args):
     log_path = os.path.join(args.output_dir, "train_log.csv")
     log_fp = open(log_path, "w", newline="", encoding="utf-8")
     log_csv = csv.writer(log_fp)
-    log_csv.writerow(["step", "gid", "loss", "r_mean", "r_min", "r_max", "r_main"])
+    log_csv.writerow(["step", "gid", "loss", "r_mean", "r_min", "r_max", "r_std", "r_main", "kl"])
     log_fp.flush()
     print(f"训练指标将写入: {log_path}")
+
+    # 每步采样输出写文本 log（不打印到终端），供坍缩/退化诊断：
+    # 追溯「正常描述→重复句式→乱码→单 token 循环」全过程。
+    captions_log_path = os.path.join(args.output_dir, "train_captions.log")
+    captions_fp = open(captions_log_path, "w", encoding="utf-8")
+    print(f"模型采样输出将写入: {captions_log_path}")
 
     question = args.question
     max_new = args.max_new_tokens
@@ -435,9 +425,10 @@ def train(args):
             print("[stop] 没有可用数据组，提前结束")
             break
 
-        # ---- 1) 构造合并 rollout batch：每组 K 张训练视角（+1 主图行仅算 r_main）----
-        # use_main_image 关闭时，主图作为额外槽位一起生成（不参与训练），零开销拿到
-        # r_main 所需的主图描述。所有行共享同一 query 模板，行间独立，可直接拼大批次。
+        # ---- 1) 构造合并 rollout batch：每组 K 张训练视角（主图行始终参与训练）----
+        # use_main_image 关闭时，主图作为额外槽位一起生成，并同样参与奖励/advantage/梯度
+        # （整图级监督信号）；r_main 直接取主图行在组内竞争中的奖励值（同口径汇报）。
+        # 所有行共享同一 query 模板，行间独立，可直接拼大批次。
         query0 = build_query(tokenizer, question).to(device)
         qlen = query0.size(0)  # (L,) 单条 prompt 长度
         gen_pixels_list, row0 = [], 0
@@ -451,7 +442,8 @@ def train(args):
                 "gid": g["gid"], "main_img": main_img,
                 "region_paths": region_paths, "neg_pool": g["negs"],
                 "metric_main_path": metric_main_path,
-                "row0": row0, "n_rows": len(gen_paths), "K": len(region_paths),
+                # K = 参与训练的行数（含主图行），与 gen_paths/reward 计算的行序严格对齐
+                "row0": row0, "n_rows": len(gen_paths), "K": len(gen_paths),
             })
             row0 += len(gen_paths)
             gen_pixels_list.extend(process_image(image_processor, p) for p in gen_paths)
@@ -479,13 +471,17 @@ def train(args):
         for m in metas:
             caps = captions_all[m["row0"]: m["row0"] + m["n_rows"]]
             resp = responses_all[m["row0"]: m["row0"] + m["n_rows"]]
-            if m["metric_main_path"] is not None:      # 主图行只做 r_main 指标
-                cap_main, caps, resp = caps[-1], caps[:-1], resp[:-1]
+            # 参与奖励/advantage/梯度的是全部行（含主图行）；路径顺序与 gen_paths 一致：
+            # use_main_image=True 时主图在 region_paths[0]，否则主图行在末尾。
+            reward_paths = m["region_paths"] + (
+                [m["metric_main_path"]] if m["metric_main_path"] else [])
+            if m["metric_main_path"] is not None:
+                cap_main = caps[-1]
             else:
                 cap_main = caps[0] if (args.use_main_image and m["main_img"]) else None
             rewards, reg_mean = compute_group_rewards(
-                fg, m["region_paths"], caps, m["neg_pool"], device,
-                alpha=args.alpha, beta=args.beta, eta=args.eta,
+                fg, reward_paths, caps, m["neg_pool"], device,
+                alpha=args.alpha, beta=args.beta,
                 neg_mode=args.neg_mode, reg_weight=args.reg_weight)
             r = torch.tensor(rewards, device=device, dtype=torch.float32)
             # 组内归一化（GRPO 风格）：mean=0、单位方差，消除组间量纲差异，
@@ -494,11 +490,13 @@ def train(args):
             # 推向输出坍缩吸引子（乱码→单 token 循环→logp 饱和为 0 死锁）。
             m.update(resp=resp, r=r, reg_mean=reg_mean,
                      adv=((r - r.mean()) / (r.std() + 1e-6)).clamp(-5.0, 5.0))
-            # 主图进度指标（只汇报，不参与梯度）
+            m["caps"] = caps
+            m["reward_paths"] = reward_paths
+            # 主图进度指标：把主图当作组内一个视角，直接取其竞争奖励值（与 r_min/r_max
+            # 同口径，含跨区域竞争项，落在同一尺度区间内，可直接比较）。
             if cap_main is not None and m["main_img"]:
-                m["r_main"] = compute_main_reward(fg, m["main_img"], cap_main, m["neg_pool"],
-                                                  device, beta=args.beta, eta=args.eta,
-                                                  neg_mode=args.neg_mode)
+                main_idx = -1 if m["metric_main_path"] is not None else 0
+                m["r_main"] = r[main_idx].item()
             else:
                 m["r_main"] = float("nan")
 
@@ -518,6 +516,31 @@ def train(args):
         n_degenerate = 0
         for m in metas:
             k = m["K"]
+
+            # KL 参考 logprob（仅主图行）：先把投影层临时换成训练前权重，no_grad 重算
+            # lp_ref 后立即恢复当前权重。必须放在本组「当前权重前向」之前——当前前向会
+            # 建立依赖投影层权重的反向图，之后再做 load_state_dict 的 inplace copy 会
+            # 让权重版本计数不一致，触发 “modified by an inplace operation” 错误。
+            main_idx = None
+            lp_ref_main = None
+            if args.kl_weight > 0 and m["main_img"]:
+                main_idx = -1 if m["metric_main_path"] is not None else 0
+                main_gidx = m["row0"] + (m["n_rows"] - 1 if main_idx == -1 else 0)
+                mm_proj = model.get_model().mm_projector
+                curr_sd = {kk: vv.detach().clone() for kk, vv in mm_proj.state_dict().items()}
+                mm_proj.load_state_dict(ref_projector_sd)
+                main_ids = torch.cat([query0.unsqueeze(0), m["resp"][main_idx].unsqueeze(0)], dim=1)
+                main_attn = torch.cat(
+                    [torch.ones(1, qlen, dtype=torch.long, device=query0.device),
+                     m["resp"][main_idx].ne(tokenizer.pad_token_id).long().unsqueeze(0)], dim=1)
+                with torch.no_grad():
+                    ref_logits = model(input_ids=main_ids, attention_mask=main_attn,
+                                       images=gen_pixels[main_gidx].unsqueeze(0)).logits
+                lp_ref_main = compute_logprobs(ref_logits[:, resp_start:-1],
+                                               m["resp"][main_idx].unsqueeze(0),
+                                               ignore_index=tokenizer.pad_token_id)
+                mm_proj.load_state_dict(curr_sd)
+
             ids = torch.cat([query0.unsqueeze(0).repeat(k, 1), m["resp"]], dim=1)
             attn = torch.cat(
                 [torch.ones(k, qlen, dtype=torch.long, device=query0.device),
@@ -536,7 +559,23 @@ def train(args):
             if lp.abs().max().item() < 1e-5:
                 n_degenerate += 1
                 continue
+
+            # KL 正则（仅主图行）：对原模型（训练前 mm_projector）的分布偏离惩罚。
+            # KL[π_θ||π_ref] ≈ lp_curr - lp_ref（样本来自 π_θ）。lp_ref 已在 no_grad 下
+            # 用参考权重重算并恢复当前权重；(lp - lp_ref) 作为常数乘子（detach）再乘以
+            # lp，反向得到标准 KL 惩罚梯度 β*(lp-lp_ref)*∇lp。
+            kl_main = 0.0
+            kl_val = float("nan")
+            if lp_ref_main is not None:
+                kl_main = ((lp[main_idx] - lp_ref_main[0]).detach() * lp[main_idx]).sum()
+                # 实际 KL 散度样本估计：Σ_t (log π_θ - log π_ref)，仅主图行整句求和，
+                # 期望 >= 0；单样本可正可负。kl_main 是其梯度对应的 loss 项，kl_val 用于汇报。
+                kl_val = (lp[main_idx] - lp_ref_main[0]).detach().sum().item()
+            m["kl"] = kl_val
+
             loss_g = -(m["adv"] * lp.sum(dim=1)).sum() / n_train
+            if lp_ref_main is not None:
+                loss_g = loss_g + args.kl_weight * kl_main / n_train
             loss_g.backward()
             loss_val += loss_g.item()
         torch.nn.utils.clip_grad_norm_(trainable, args.max_grad_norm)
@@ -553,16 +592,31 @@ def train(args):
 
         if step % args.log_interval == 0:
             rs = torch.cat([m["r"] for m in metas])
+            # r_std：各组内 std 的均值 = advantage 归一化分母的平均水平。
+            # 持续收缩 = 输出趋同（探索度衰减/熵坍缩前兆）；极小非零 = 归一化放大噪声。
+            stds = [m["r"].std().item() for m in metas]
             r_mains = [m["r_main"] for m in metas if m["r_main"] == m["r_main"]]
             regs = [m["reg_mean"] for m in metas if m["reg_mean"] == m["reg_mean"]]
             reg_str = f" reg={sum(regs) / len(regs):.4f}" if regs else ""
+            kls = [m["kl"] for m in metas if m["kl"] == m["kl"]]
+            kl_str = f" kl={sum(kls) / len(kls):.4f}" if kls else ""
             r_main_str = f"{sum(r_mains) / len(r_mains):.4f}" if r_mains else "nan"
             deg_str = f" degenerate={n_degenerate}/{len(metas)}" if n_degenerate else ""
             print(
                 f"[{step}/{args.steps}] G={len(metas)} B={n_train} loss={loss_val:.4f} "
                 f"r_mean={rs.mean().item():.4f} r_min={rs.min().item():.4f} r_max={rs.max().item():.4f} "
-                f"r_main={r_main_str}{reg_str}{deg_str}"
+                f"r_std={sum(stds) / len(stds):.4f} "
+                f"r_main={r_main_str}{kl_str}{reg_str}{deg_str}"
             )
+            # 采样输出写 log（不打印）：每步一组，含各视角 caption，便于诊断坍缩/退化
+            captions_fp.write(f"===== step {step} =====\n")
+            for m in metas:
+                for p, c in zip(m["reward_paths"], m["caps"]):
+                    stem = os.path.splitext(os.path.basename(p))[0]
+                    tag = "main" if stem == m["gid"] else stem[len(m["gid"]) + 1:]
+                    captions_fp.write(f"[{m['gid']}] {tag}: {c}\n")
+            captions_fp.write("\n")
+            captions_fp.flush()
 
         # 每组指标落盘（同 step 多行；adv_mean 恒为 0，无信息量，不记录）
         for m in metas:
@@ -572,7 +626,9 @@ def train(args):
                 f"{m['r'].mean().item():.6f}",
                 f"{m['r'].min().item():.6f}",
                 f"{m['r'].max().item():.6f}",
+                f"{m['r'].std().item():.6f}",
                 f"{m['r_main']:.6f}",
+                f"{m['kl']:.6f}",
             ])
         log_fp.flush()
 
@@ -584,6 +640,7 @@ def train(args):
         step += 1
 
     log_fp.close()
+    captions_fp.close()
     print("训练完成。投影层保存在", args.output_dir)
     print("指标曲线: python mvpg_run/plot_train_log.py --log", log_path)
 
@@ -605,7 +662,9 @@ def main():
     p.add_argument("--lr", type=float, default=3e-4, help="投影层学习率")
     p.add_argument("--alpha", type=float, default=1.0, help="RCGR 跨区域竞争项系数")
     p.add_argument("--beta", type=float, default=0.5, help="RCGR 负样本基线项系数")
-    p.add_argument("--eta", type=float, default=0.0, help="RCGR 长度惩罚系数")
+    p.add_argument("--kl-weight", type=float, default=0.1,
+                   help="对原模型（训练前 mm_projector）的 KL 正则权重，仅主图行；<=0 关闭。"
+                        "过大(>=1)会压死策略、奖励长期不涨，建议 0.05~0.2")
     p.add_argument("--neg-mode", choices=["first", "worst"], default="first",
                    help="缺席难负例池用法：first=固定取池首条；worst=逐区域取最难一条")
     p.add_argument("--reg-weight", type=float, default=0.0,

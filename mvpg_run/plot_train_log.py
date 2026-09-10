@@ -2,15 +2,21 @@
 """MVPG 训练指标可视化（读取 run_mvpg.py 生成的 train_log.csv）。
 
 指标（不含 adv_mean，恒 0 无信息量）：
-  step, gid, loss, r_mean, r_min, r_max, r_main
+  step, gid, loss, r_mean, r_min, r_max, r_std, r_main, kl
   - loss   ：REINFORCE surrogate = -mean(advantage_norm·logprob)；advantage 已组内
              归一化（除以 std），loss 数值尺度与旧版不可直接比较；不单调，仅作参考
   - r_mean ：组内平均 RCGR 奖励
   - r_min  ：组内最差区域奖励
   - r_max  ：组内最好区域奖励
-  - r_main ：主图进度指标 = sim(主图描述, 主图) - beta·sim(负例, 主图) - eta·len；
-            不参与梯度，衡量模型输出相对缺席负例的余量，理想情况随训练逐步升高，
-            是比 loss/组内 reward 更稳定的训练进度信号
+  - r_std  ：组内奖励标准差 = advantage 归一化分母的平均水平；持续收缩 = 输出趋同
+            （探索度衰减/熵坍缩前兆），配合 r_mean 判断：高 r_mean + 低 r_std 为良性
+            收敛，低 r_mean + 低 r_std 为模式坍缩
+  - r_main ：主图行竞争奖励（把主图当作组内一个视角，与 r_mean/r_min/r_max 同口径、
+            含跨区域竞争项），落在同一尺度区间内，可直接比较；不单独参与优化（主图行
+            本身已随组内其他视角一起进梯度），作为主图视角的进度信号
+  - kl     ：主图行对原模型（训练前 mm_projector）的 KL 散度样本估计
+            = Σ_t (log π_θ - log π_ref)，期望 >= 0，单样本可正可负；偏离参考模型
+            的程度，配合 reward 判断是否被 KL 压死（kl 大而 reward 不涨 = kl_weight 过大）
 
 用法：
     python mvpg_run/plot_train_log.py --log <output_dir>/train_log.csv [--out fig.png]
@@ -94,8 +100,8 @@ def plot_train_log(log_csv, out_png=None, window=50):
         print(f"[plot_train_log] {log_csv} 暂无数据行")
         return
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(11, 8), sharex=True, constrained_layout=True
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(
+        4, 1, figsize=(11, 13), sharex=True, constrained_layout=True
     )
 
     # 上：loss
@@ -131,6 +137,37 @@ def plot_train_log(log_csv, out_png=None, window=50):
     ax2.set_xlabel("step")
     ax2.legend(loc="best", fontsize=9)
     ax2.grid(alpha=0.3)
+
+    # 下：组内奖励标准差 r_std（探索度/熵坍缩前兆监控，独立面板便于观察收缩趋势）
+    if "r_std" in metrics:
+        std = metrics["r_std"]
+        ax3.plot(steps, std, alpha=0.3, lw=0.8, color="#8c564b", label="r_std raw")
+        ax3.plot(steps, _smooth(std, window), lw=1.8, color="#8c564b",
+                 label=f"r_std smooth({window})")
+        ax3.axhline(1e-3, color="gray", ls="--", lw=0.8, label="noise floor 1e-3")
+        ax3.set_ylabel("group reward std")
+        ax3.set_xlabel("step")
+        ax3.legend(loc="best", fontsize=9)
+        ax3.grid(alpha=0.3)
+    else:  # 兼容旧 CSV（无 r_std 列）
+        ax3.set_visible(False)
+
+    # 下：主图 KL 散度（Σ_t log π_θ/π_ref；期望>=0，单样本可正可负；监控偏离参考模型程度）
+    if "kl" in metrics:
+        kl = metrics["kl"]
+        ax4.plot(steps, kl, alpha=0.3, lw=0.8, color="#e377c2", label="kl raw")
+        if np.isnan(kl).any():  # kl_weight<=0 或该组无主图时为 nan，只画 raw
+            ax4.plot(steps, kl, lw=1.8, color="#e377c2", label="kl (nan skipped)")
+        else:
+            ax4.plot(steps, _smooth(kl, window), lw=1.8, color="#e377c2",
+                     label=f"kl smooth({window})")
+        ax4.axhline(0.0, color="gray", ls="--", lw=0.8, label="ref (kl=0)")
+        ax4.set_ylabel("KL (main image)")
+        ax4.set_xlabel("step")
+        ax4.legend(loc="best", fontsize=9)
+        ax4.grid(alpha=0.3)
+    else:  # 兼容旧 CSV（无 kl 列）
+        ax4.set_visible(False)
 
     if out_png is None:
         out_png = log_csv.with_suffix(".png")

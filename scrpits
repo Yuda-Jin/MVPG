@@ -1,4 +1,22 @@
-generate negative samples
+# ================= MVPG 完整流程 CLI =================
+# 数据准备（本地 Windows，脚本位于 data/ 目录）+ 训练/评测（autodl Linux）
+# 注：tile_demo.py 的 MODEL_ROOT 为硬编码，需改成本地 FG-CLIP2 权重路径
+
+# ---- 1. SA-1B 筛选：挑出「>=4 个显著物体」的图（输出 bbox 叠加图，用于构图检查） ----
+python .\vis_sa1.py --input-dir C:\data\SA1B --output-dir C:\data\SA1B_split
+
+# ---- 2. tile split：n×n 网格切分（主图 + 子图）+ FG-CLIP2 内部相似度过滤 ----
+python .\tile_demo.py --raw-dir C:\data\SA1B_split --out-dir C:\data\SA1B_split\SA1B_5_threshold --n-split 2 --threshold 0.5
+
+# ---- 3. generate negative samples：VLM 生成「图中不存在物体」描述（写 meta.json + neg_captions.json） ----
 python .\generate_neg_captions.py --image-dir C:\data\SA1B_split\SA1B_5_threshold --vlm-base-url https://ai.stackway.org/v1 --vlm-model gpt-4o-mini --vlm-api-key sk-kq13YxThUEIiqaHOdIzqcFTnkSVICN4Qe4fbgwl94YKnUvcx
 
-tile split 
+# ---- 4. 训练（autodl Linux，conda mvpg 环境；STEPS/GROUPS_PER_STEP/MAXNEW 可 env 覆盖） ----
+bash run/train_mvpg.sh
+# 冒烟测试：STEPS=2 MAXNEW=8 bash run/train_mvpg.sh
+
+# ---- 5. 评测（autodl Linux；CKPT 必填，GPT 判分需 OPENAI_API_KEY） ----
+CKPT=/root/autodl-tmp/output/mvpg_ckpt/mm_projector_step1000.bin bash run/eval_all_metrics_mvpg.sh
+
+# ---- 6. 训练曲线可视化（loss / r_mean / r_std / r_main） ----
+python mvpg_run/plot_train_log.py --log /root/autodl-tmp/output/mvpg_ckpt/train_log.csv

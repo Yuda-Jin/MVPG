@@ -15,6 +15,8 @@ GROUPS_PER_STEP=${GROUPS_PER_STEP:-4}
 
 # 建议先冒烟：STEPS=2 MAXNEW=8 bash run/train_mvpg.sh
 MAXNEW=${MAXNEW:-64}
+# KL 正则权重（仅主图行）：过大(>=1)会压死策略、奖励长期不涨，建议 0.05~0.2
+KL_WEIGHT=${KL_WEIGHT:-0.1}
 
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -40,5 +42,6 @@ $PY mvpg_run/run_mvpg.py \
     --bf16 \
     --lr 1e-4 \
     --temperature 1.0 \
+    --kl-weight "$KL_WEIGHT" \
     --log-interval 5 \
     --save-interval 50
