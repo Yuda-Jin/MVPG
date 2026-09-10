@@ -23,13 +23,15 @@ from llava.mm_utils import (
 from llava.model import *
 from PIL import Image
 import math
-from peft import PeftModel
+try:
+    from peft import PeftModel
+except ImportError:  # MVPG 评测路径（--mm-projector）不需要 peft
+    PeftModel = None
 
 from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-from datasets import load_dataset
 
 
 def split_list(lst, n):
@@ -75,7 +77,19 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = 'LLaVa-RLHF_' + get_model_name_from_path(model_path)
     compute_dtype = torch.float16
-    if args.use_qlora:
+    if getattr(args, "mm_projector", None):
+        # MVPG：base 模型 + 训练得到的 mm_projector 权重（与 mvpg_run/run_mvpg.py 同一加载
+        # 路径：本地 CLIP 目录改写 + mlp2x_gelu 投影层结构，保证与训练权重键完全对齐）
+        from mvpg_run.run_mvpg import load_model_and_tokenizer
+        model, tokenizer, image_processor, dtype = load_model_and_tokenizer(
+            model_path, 16, False, True, "cuda"
+        )
+        compute_dtype = dtype
+        model.get_model().mm_projector.load_state_dict(
+            torch.load(os.path.expanduser(args.mm_projector), map_location="cpu")
+        )
+        print(f"Loaded mm_projector from {args.mm_projector}")
+    elif args.use_qlora:
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
 
         bits = 16
@@ -137,7 +151,18 @@ def eval_model(args):
             model_path, args.model_base, model_name
         )
 
-    dataset = load_dataset("Shengcao1006/MMHal-Bench")['test']
+    # MMHal 数据改为本地加载：HF 仓库是加载脚本型数据集，经 hf-mirror 拉元数据时
+    # datasets 会把 gzip 内容当文本解码而崩溃（UnicodeDecodeError）。
+    # 本地数据来自手动下载的 test_data.zip（response_template.json + images/），
+    # 可用环境变量 MMHAL_DATA_ROOT 覆盖。
+    _mmhal_root = os.environ.get("MMHAL_DATA_ROOT", "/root/autodl-tmp/data/eval/mmhal")
+    with open(os.path.join(_mmhal_root, "response_template.json"), encoding="utf-8") as f:
+        dataset = json.load(f)
+    for _idx, _line in enumerate(dataset):
+        _line["id"] = _idx
+        _line["image_path"] = os.path.join(
+            _mmhal_root, "images", os.path.split(_line["image_src"])[1]
+        )
     answers_file = os.path.expanduser(args.answers_file)
     os.makedirs(os.path.dirname(answers_file), exist_ok=True)
     ans_file = open(answers_file, "w")
@@ -245,6 +270,8 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top_p", type=float, default=None)
     parser.add_argument("--num_beams", type=int, default=1)
+    parser.add_argument("--mm-projector", type=str, default="",
+                        help="MVPG 训练的 mm_projector .bin；设置后忽略 qlora 走 MVPG 加载分支")
     parser.add_argument("--use-qlora", type=bool, default=False)
     parser.add_argument("--qlora-path", type=str, default="")
     parser.add_argument("--short_eval", type=bool, default=False)

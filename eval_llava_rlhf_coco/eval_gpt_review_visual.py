@@ -3,7 +3,7 @@ import json
 import os
 
 import openai
-from openai import AzureOpenAI
+from openai import OpenAI
 import time
 from tqdm import tqdm
 NUM_SECONDS_TO_SLEEP = 5
@@ -15,7 +15,7 @@ def get_eval(client, content: str, max_tokens: int):
     while True:
         try:
             response = client.chat.completions.create(
-                model='gpt-4',
+                model=os.getenv('GPT_MODEL', 'deepseek-chat'),
                 messages=[{
                     'role': 'system',
                     'content': 'You are a helpful and precise assistant for checking the quality of the answer.'
@@ -68,9 +68,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     api_key = os.getenv("OPENAI_API_KEY")
-    client = AzureOpenAI(
-            api_version="2023-07-01-preview",
-            azure_endpoint=os.getenv("OPENAI_ENDPOINT"),
+    client = OpenAI(
+            base_url=os.getenv("OPENAI_ENDPOINT"),
             api_key=api_key,
         )
 

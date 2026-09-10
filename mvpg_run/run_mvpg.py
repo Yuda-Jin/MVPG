@@ -3,7 +3,8 @@
 MVPG RL 训练（自研，不依赖 verl）。
 
 方法对应 paper/story.md：
-  §3.3  策略梯度：REINFORCE + leave-one-out 基线（组 = 同图多区域视角），
+  §3.3  策略梯度：REINFORCE + 组内归一化基线（组 = 同图多区域视角：
+        advantage = (r_i - mean(r)) / (std(r) + eps)，消除组间奖励量纲差异），
         梯度只回传投影层 mm_projector，视觉编码器与 LLM 冻结。
   §3.2  区域对比接地奖励 RCGR：
         r_i = alpha * [sim(a_i, R_i) - max_{j!=i} sim(c_j, R_i)]
@@ -11,23 +12,29 @@ MVPG RL 训练（自研，不依赖 verl）。
             - eta   * len(a_i)
         sim = FG-CLIP 文本/区域特征余弦相似度。
 
-数据格式（image-dir 下每个子目录 = 一张原图的一组区域视角）：
+数据格式（image-dir 下每个子目录 = 一张主图的一组网格子图视角）：
     image-dir/
+      neg_captions.json    # 组级总 json：{gid: ["缺席难负例1", ...]}（同时也是组索引，
+                           # 训练用它一次列出全部组，不再遍历子目录）
       001/
-        region_0.png   # mask-only 区域图 M_0（只保留区域 R_0，其余涂黑）
-        region_1.png
+        001.png            # 主图（整图，已下采样到与子图同尺寸）
+        001_r0c0.png       # 子图视角 R_0（主图按 n 等分网格切分得到的 crop）
+        001_r0c1.png       # 子图视角 R_1
         ...
-        meta.json      # {"neg_caption": "a photo of <缺席难负例>"}
+        meta.json          # 旧版逐组负例（保留文件，训练不再读取；负例一律取自根 json）
+    neg_captions 是对整张主图生成的「图中不存在物体」描述，作为组级缺席难负例池。
+    无 neg_captions.json 时回退为按子目录名罗列组（负例为空）。
 
 用法：
-    python mvpg_run/run_mvpg.py --image-dir <区域图目录> --model-name <LLaVA路径> \
+    python mvpg_run/run_mvpg.py --image-dir <数据目录> --model-name <LLaVA路径> \
         --output-dir <checkpoint目录> --steps 1000 --lr 1e-4
 """
 
 import argparse
-import glob
+import csv
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -41,76 +48,80 @@ import transformers
 from llava import conversation as conversation_lib
 from llava.mm_utils import tokenizer_image_token
 from llava.model import LlavaLlamaForCausalLM
-from utils.constants import DEFAULT_IMAGE_TOKEN
-from utils.common_utils import compute_logprobs
+from utils.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
 
-# ---------------- RCGR 奖励系数（story.md §3.2） ----------------
-ALPHA = 1.0   # 跨区域竞争项
-BETA = 0.5    # 负样本基线项
-ETA = 0.0     # 长度惩罚（先取 0，后续消融）
+# ---------------- RCGR 奖励默认系数（可通过 CLI 覆盖做消融） ----------------
 FGCLIP_ROOT = str(ROOT / "models" / "fgclip2-base-patch16")
 
-# 生成 prompt（对每个 mask-only 区域图提问）
-DEFAULT_QUESTION = "Describe the highlighted object or region in this image."
+# 生成 prompt（对每个子图视角提问；子图是网格 crop，非 mask 高亮图）
+DEFAULT_QUESTION = "Describe the image content in detail."
 
 
 # =============================================================================
 # FG-CLIP2：图像/文本编码（用于奖励）
+# 本地补丁版加载器（mvpg_run/fgclip_local.py）：官方权重 + Siglip2 风格预处理
+# 复刻，规避 transformers 4.34 与官方 4.53+ 建模代码的 API 冲突。
 # =============================================================================
 
-_FGCLIP = {"model": None, "proc": None, "tokenizer": None}
+_fgclip = None  # 惰性加载单例（FGChip 对象）
 
 
-def _load_fgclip(model_root, device):
-    if _FGCLIP["model"] is not None:
-        return _FGCLIP
-    from transformers import AutoImageProcessor, AutoModelForCausalLM, AutoTokenizer
-    model = AutoModelForCausalLM.from_pretrained(model_root, trust_remote_code=True)
-    model.to(device).eval()
-    proc = AutoImageProcessor.from_pretrained(model_root)
-    tokenizer = AutoTokenizer.from_pretrained(model_root)
-    _FGCLIP.update(model=model, proc=proc, tokenizer=tokenizer)
-    return _FGCLIP
-
-
-def _max_num_patches(w, h):
-    n = (w // 16) * (h // 16)
-    return 1024 if n > 784 else 784 if n > 576 else 576 if n > 256 else 256 if n > 128 else 128
-
-
-def _encode_image(fg, img_path, device):
-    from PIL import Image
-    img = Image.open(img_path).convert("RGB")
-    w, h = img.size
-    inp = fg["proc"](images=img, max_num_patches=_max_num_patches(w, h),
-                     return_tensors="pt").to(device)
-    with torch.no_grad():
-        feat = fg["model"].get_image_features(**inp)
-    return F.normalize(feat, p=2, dim=-1)[0]
-
-
-def _encode_text(fg, text, device):
-    tok = fg["tokenizer"](text, return_tensors="pt", padding=True, truncation=True).to(device)
-    with torch.no_grad():
-        feat = fg["model"].get_text_features(**tok)
-    return F.normalize(feat, p=2, dim=-1)[0]
+def _load_fgclip(root, device):
+    global _fgclip
+    if _fgclip is None:
+        from mvpg_run.fgclip_local import load_fgclip
+        _fgclip = load_fgclip(root, device)
+    return _fgclip
 
 
 def _cos(a, b):
     return float((a * b).sum().item())
 
 
-def compute_group_rewards(fg, region_paths, captions, neg_caption, device):
-    """组级 RCGR 奖励。region_paths/captions 一一对应（同图 K 个区域）。
-    返回 list[float]（长度 K）。
+def _select_neg_sim(neg_feats, img_feat, neg_mode):
+    """按 neg_mode 从负例特征池选一条与 img_feat 的余弦：
+    first=池首条（训练默认，稳定可复现）；worst=最难区分的一条。"""
+    if neg_mode == "worst":
+        return max(_cos(nf, img_feat) for nf in neg_feats)
+    return _cos(neg_feats[0], img_feat)
+
+
+def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
+                          alpha=1.0, beta=0.5, eta=0.0, neg_mode="first",
+                          reg_weight=0.0):
+    """组级 RCGR 奖励。region_paths/captions 一一对应（同图 K 个子图视角）。
+    返回 (list[float], float)：奖励列表（长度 K）与区域结构正则均值
+    （reg_weight<=0 时为 nan，仅关闭时）。
 
     - sim(a_i, R_i)：caption_i 文本 vs 区域 i 视觉
     - max_{j!=i} sim(c_j, R_i)：同图其余区域描述的竞争项
-    - sim(b, R_i)：缺席难负例基线
+    - sim(b, R_i)：缺席难负例基线（b 来自组级 neg_captions 池；
+      neg_mode="first" 固定取池首条；neg_mode="worst" 逐区域取最难一条）
+    - reg_weight>0：区域结构对齐正则（reward shaping）。caption 由离散采样得到，
+      FG-CLIP 文本编码在 no_grad 下不可微，无法作为直接 loss 反传到投影层，
+      故并入奖励经 advantage 产生梯度：
+        S_t[i,j] = sim(caption_i, R_j)   文本→视觉相似度矩阵（随策略变化）
+        S_v[i,j] = sim(R_i, R_j)         视觉→视觉结构先验（组内固定）
+      两矩阵均去对角线后 Frobenius 归一化（单位范数，量纲对齐），区域 i 的
+      奖励扣减 reg_weight * Σ_{j≠i} (S_t_n[i,j] - S_v_n[i,j])²。
+      约束语义：描述间的相对相似结构应贴合区域视觉间的相对相似结构。
     """
     K = len(region_paths)
-    img_feats = [_encode_image(fg, p, device) for p in region_paths]
-    txt_feats = [_encode_text(fg, c, device) for c in captions]
+    img_feats = fg.encode_image_paths(region_paths)                # (K, D)
+    neg_captions = list(neg_captions or [])
+    all_txt = list(captions) + neg_captions
+    feats = fg.encode_texts(all_txt)                               # (K+N, D)
+    txt_feats = feats[:K]
+    neg_feats = feats[K:] if neg_captions else []
+
+    reg_rows = None
+    if reg_weight > 0 and K > 1:
+        eye = torch.eye(K, dtype=torch.bool, device=img_feats.device)
+        S_t = (txt_feats @ img_feats.t()).masked_fill(eye, 0.0)    # 文本→视觉，去对角
+        S_v = (img_feats @ img_feats.t()).masked_fill(eye, 0.0)    # 视觉→视觉，去对角
+        S_t = S_t / (S_t.norm() + 1e-6)                            # Frobenius 归一化
+        S_v = S_v / (S_v.norm() + 1e-6)
+        reg_rows = ((S_t - S_v) ** 2).sum(dim=1)                   # (K,) 逐区域失配
 
     rewards = []
     for i in range(K):
@@ -119,16 +130,39 @@ def compute_group_rewards(fg, region_paths, captions, neg_caption, device):
         # 跨区域竞争项：其余区域描述 vs 本区域视觉，取最大
         sim_others = max(_cos(txt_feats[j], img_feats[i]) for j in range(K) if j != i)
 
-        # 负样本基线
-        if neg_caption:
-            neg_feat = _encode_text(fg, neg_caption, device)
-            sim_neg = _cos(neg_feat, img_feats[i])
-        else:
-            sim_neg = 0.0
+        # 缺席难负例基线（图级负例池）
+        sim_neg = _select_neg_sim(neg_feats, img_feats[i], neg_mode) if len(neg_feats) > 0 else 0.0
 
-        r = ALPHA * (sim_self - sim_others) + BETA * (sim_self - sim_neg) - ETA * len(captions[i])
+        r = alpha * (sim_self - sim_others) + beta * (sim_self - sim_neg) - eta * len(captions[i])
+        if reg_rows is not None:
+            r = r - reg_weight * reg_rows[i].item()
         rewards.append(r)
-    return rewards
+
+    reg_mean = reg_rows.mean().item() if reg_rows is not None else float("nan")
+    return rewards, reg_mean
+
+
+def compute_main_reward(fg, main_path, caption, neg_captions, device,
+                        beta=0.5, eta=0.0, neg_mode="first"):
+    """主图训练进度指标（只汇报，不参与梯度/优化）。
+
+    r_main = sim(caption, 主图) - beta * sim(负例, 主图) - eta * len(caption)
+
+    与训练奖励的区别：去掉跨区域竞争项——主图没有「同层级的其它视角」，
+    该指标衡量模型输出文本相对缺席负例的余量（margin）。
+    负例是固定文本，sim(负例,主图) 对同组恒定，因此 r_main 上升
+    ⇔ 描述更贴主图或更远离负例，适合作为跨步训练进度信号。
+    """
+    img_feat = fg.encode_image_paths([main_path])[0]               # (D,)
+    txt_feat = fg.encode_texts([caption])[0]                       # (D,)
+    neg_captions = list(neg_captions or [])
+    sim_self = _cos(txt_feat, img_feat)
+    if neg_captions:
+        neg_feats = fg.encode_texts(neg_captions)                  # (N, D)
+        sim_neg = _select_neg_sim(neg_feats, img_feat, neg_mode)
+    else:
+        sim_neg = 0.0
+    return sim_self - beta * sim_neg - eta * len(caption)
 
 
 # =============================================================================
@@ -157,8 +191,21 @@ def load_model_and_tokenizer(model_name, bits, fp16, bf16, device):
             ),
         )
 
+    # LLaVA-1.5 checkpoint 不含 CLIP 视觉塔权重（0 keys），config 默认指向
+    # openai/clip-vit-large-patch14-336 远程仓库。加载前改写为本地目录避免联网。
+    # 本地 CLIP 默认放在模型目录同级 clip-vit-large-patch14-336，可用 LLAVA_CLIP_DIR 覆盖。
+    clip_dir = os.environ.get("LLAVA_CLIP_DIR")
+    if clip_dir is None:
+        clip_dir = str(Path(model_name).resolve().parent / "clip-vit-large-patch14-336")
+    if os.path.isdir(clip_dir):
+        llava_cfg = LlavaLlamaForCausalLM.config_class.from_pretrained(model_name)
+        llava_cfg.mm_vision_tower = clip_dir
+    else:
+        llava_cfg = None
+
     model = LlavaLlamaForCausalLM.from_pretrained(
         model_name,
+        config=llava_cfg,
         use_flash_attention_2=False,
         torch_dtype=compute_dtype,
         device_map={"": device} if bits in [4, 8] else None,
@@ -182,10 +229,15 @@ def load_model_and_tokenizer(model_name, bits, fp16, bf16, device):
     image_processor = vision_tower.image_processor
 
     # 初始化视觉 tokenizer（把 <image> 映射为 IMAGE_TOKEN_INDEX）
+    # 与 checkpoint config 保持一致：llava-v1.5-7b 的 mm_use_im_start_end / mm_use_im_patch_token
+    # 均为 False（<image> 由 prompt 层处理，词表 32000 不含额外 special token）。
     from argparse import Namespace
-    model_args = Namespace(mm_use_im_start_end=False, mm_use_im_patch_token=True)
-    model.config.mm_use_im_start_end = False
-    model.config.mm_use_im_patch_token = True
+    model_args = Namespace(
+        mm_use_im_start_end=bool(getattr(model.config, "mm_use_im_start_end", False)),
+        mm_use_im_patch_token=bool(getattr(model.config, "mm_use_im_patch_token", False)),
+        tune_mm_mlp_adapter=False,
+        pretrain_mm_mlp_adapter=None,
+    )
     model.initialize_vision_tokenizer(model_args, tokenizer=tokenizer)
 
     # 只训 mm_projector
@@ -197,29 +249,79 @@ def load_model_and_tokenizer(model_name, bits, fp16, bf16, device):
 
 
 # =============================================================================
-# 数据：扫描 image-dir，每个子目录 = 一组区域
+# 数据：组索引优先来自 image-dir 根级总 json（{gid: [缺席难负例]}），
+# 启动只做一次 json.load，不再遍历全部子目录、不再读子目录 meta.json（文件保留）。
+# 子图路径仅在组被采样到时解析（单目录，按 `<gid>_r<row>c<col>` 识别并排序）。
 # =============================================================================
 
+_IMG_SUFFIXES = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 
-def scan_groups(image_dir):
-    """返回 [(group_id, [region_path...], meta)]，meta 含 neg_caption。"""
-    groups = []
-    for sub in sorted(Path(image_dir).iterdir()):
-        if not sub.is_dir():
+
+def _clean_negs(negs):
+    if isinstance(negs, str):
+        negs = [negs]
+    return [str(n).strip() for n in (negs or []) if n and str(n).strip()]
+
+
+def _read_root_neg_pool(image_dir):
+    """读取 image-dir 根级总 json（当前数据为 neg_captions.json）。找不到返回 None。"""
+    image_dir = Path(image_dir)
+    for name in ("neg_captions.json", "groups.json"):
+        fp = image_dir / name
+        if not fp.is_file():
             continue
-        region_paths = sorted(
-            p for p in glob.glob(os.path.join(str(sub), "*"))
-            if p.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".webp"))
-        )
-        if len(region_paths) < 2:  # leave-one-out 需要至少 2 个区域
+        try:
+            raw = json.loads(fp.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
             continue
-        meta = {}
-        meta_path = os.path.join(str(sub), "meta.json")
-        if os.path.exists(meta_path):
-            with open(meta_path, encoding="utf-8") as f:
-                meta = json.load(f)
-        groups.append((sub.name, region_paths, meta))
-    return groups
+        if isinstance(raw, dict):
+            pool = {str(k): _clean_negs(v) for k, v in raw.items()}
+            # 只保留确实存在目录的组，避免索引与磁盘不一致
+            return {gid: negs for gid, negs in pool.items() if (image_dir / gid).is_dir()}
+    return None
+
+
+_group_resolve_cache = {}
+
+
+def resolve_group_images(image_dir, gid):
+    """解析单个组目录 -> (main_img, regions)（与旧 scan_group_images 同语义，
+    但仅针对被采样到的组，不做全量目录扫描，也不读 meta.json）。"""
+    key = (str(image_dir), gid)
+    if key in _group_resolve_cache:
+        return _group_resolve_cache[key]
+    gd = Path(image_dir) / gid
+    main_img, tiles, others = None, {}, []
+    if gd.is_dir():
+        for p in sorted(gd.iterdir()):
+            if not p.is_file() or p.suffix.lower() not in _IMG_SUFFIXES:
+                continue
+            if p.stem == gid:
+                main_img = str(p)
+                continue
+            m = re.fullmatch(rf"{re.escape(gid)}_r(\d+)c(\d+)", p.stem, re.IGNORECASE)
+            if m:
+                tiles[(int(m.group(1)), int(m.group(2)))] = str(p)
+            else:
+                others.append(str(p))
+    regions = [tiles[k] for k in sorted(tiles)] if tiles else others
+    out = (main_img, regions)
+    _group_resolve_cache[key] = out
+    return out
+
+
+def load_groups(image_dir):
+    """返回组 dict 列表：{gid, negs}（main_img/regions 用到时再 resolve）。
+
+    优先：image-dir 根级总 json 的 key（当前数据 neg_captions.json 含全部组，
+    与子目录一一对应）——启动只做一次 json.load，负例直接用根 json。
+    回退：无总 json 时按子目录名构造（负例为空，兼容无索引数据）。
+    """
+    pool = _read_root_neg_pool(image_dir)
+    if pool:
+        return [{"gid": gid, "negs": pool[gid]} for gid in sorted(pool)]
+    return [{"gid": sub.name, "negs": []}
+            for sub in sorted(Path(image_dir).iterdir()) if sub.is_dir()]
 
 
 # =============================================================================
@@ -259,19 +361,31 @@ def process_image(image_processor, img_path, image_aspect_ratio="pad"):
 # =============================================================================
 
 
+def compute_logprobs(logits, labels, ignore_index):
+    """逐 token logprob，padding(ignore_index) 位置置 0。同 utils.common_utils。"""
+    return -F.cross_entropy(
+        logits.permute(0, 2, 1), labels, reduction="none", ignore_index=ignore_index
+    )
+
+
 def train(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("=" * 78)
-    print("MVPG RL 训练（自研 REINFORCE + leave-one-out，只训投影层）")
+    print("MVPG RL 训练（自研 REINFORCE + 组均值基线，只训投影层）")
     print(f"  model  : {args.model_name}")
     print(f"  data   : {args.image_dir}")
     print(f"  device : {device}")
+    print(f"  RCGR   : alpha={args.alpha} beta={args.beta} eta={args.eta} neg_mode={args.neg_mode} "
+          f"use_main_image={args.use_main_image}")
+    print(f"  batch  : groups_per_step={args.groups_per_step} reg_weight={args.reg_weight}")
     print("=" * 78)
 
-    groups = scan_groups(args.image_dir)
-    print(f"共 {len(groups)} 个区域组（每组 >=2 个区域）")
+    groups = load_groups(args.image_dir)
+    print(f"共 {len(groups)} 个数据组")
     if len(groups) == 0:
-        raise SystemExit("没有找到有效数据组，请检查 image-dir 结构。")
+        raise SystemExit("没有找到有效数据组，请检查 image-dir 结构或根级 json。")
+    for g in groups[:3]:
+        print(f"  gid={g['gid']} negs={len(g['negs'])}")
 
     model, tokenizer, image_processor, dtype = load_model_and_tokenizer(
         args.model_name, args.bits, args.fp16, args.bf16, device
@@ -289,74 +403,178 @@ def train(args):
 
     os.makedirs(args.output_dir, exist_ok=True)
 
+    # 每步指标写 CSV（不含 adv_mean），供 mvpg_run/plot_train_log.py 可视化
+    log_path = os.path.join(args.output_dir, "train_log.csv")
+    log_fp = open(log_path, "w", newline="", encoding="utf-8")
+    log_csv = csv.writer(log_fp)
+    log_csv.writerow(["step", "gid", "loss", "r_mean", "r_min", "r_max", "r_main"])
+    log_fp.flush()
+    print(f"训练指标将写入: {log_path}")
+
     question = args.question
     max_new = args.max_new_tokens
 
     step = 0
+    gcursor = 0  # 组游标：顺序循环多 epoch；每个优化器步消耗 G 个组
+    collapse_steps = 0  # 连续全组 logp 饱和的步数（输出坍缩检测，>=5 硬停止）
+    G = max(1, args.groups_per_step)
+    print(f"每次更新同时处理 {G} 个数据组（数据并行；组间独立，reward/advantage 仍组内计算）")
     while step < args.steps:
-        # 随机取一组（可循环多 epoch）
-        gid, region_paths, meta = groups[step % len(groups)]
-        K = len(region_paths)
-        neg_caption = meta.get("neg_caption", "")
+        # ---- 0) 顺序取 G 个有效组（坏组跳过；游标循环）----
+        batch_raw, metas, tries = [], [], 0
+        while len(batch_raw) < G and tries < len(groups):
+            tries += 1
+            g = groups[gcursor % len(groups)]
+            gcursor += 1
+            main_img, regions = resolve_group_images(args.image_dir, g["gid"])
+            if len(regions) < 2:
+                print(f"[skip] gid={g['gid']} regions={len(regions)} < 2，跳过")
+                continue
+            batch_raw.append((g, main_img, regions))
+        if not batch_raw:
+            print("[stop] 没有可用数据组，提前结束")
+            break
 
-        # ---- 1) 构造 batch：K 张区域图 -> queries + pixel_values ----
-        query = build_query(tokenizer, question)  # (L,)
-        query = query.unsqueeze(0).repeat(K, 1).to(device)          # (K, L)
+        # ---- 1) 构造合并 rollout batch：每组 K 张训练视角（+1 主图行仅算 r_main）----
+        # use_main_image 关闭时，主图作为额外槽位一起生成（不参与训练），零开销拿到
+        # r_main 所需的主图描述。所有行共享同一 query 模板，行间独立，可直接拼大批次。
+        query0 = build_query(tokenizer, question).to(device)
+        qlen = query0.size(0)  # (L,) 单条 prompt 长度
+        gen_pixels_list, row0 = [], 0
+        for g, main_img, regions in batch_raw:
+            region_paths = list(regions)
+            if args.use_main_image and main_img:   # 可选：整图并入组内作为额外视角
+                region_paths.insert(0, main_img)
+            metric_main_path = main_img if (not args.use_main_image and main_img) else None
+            gen_paths = region_paths + ([metric_main_path] if metric_main_path else [])
+            metas.append({
+                "gid": g["gid"], "main_img": main_img,
+                "region_paths": region_paths, "neg_pool": g["negs"],
+                "metric_main_path": metric_main_path,
+                "row0": row0, "n_rows": len(gen_paths), "K": len(region_paths),
+            })
+            row0 += len(gen_paths)
+            gen_pixels_list.extend(process_image(image_processor, p) for p in gen_paths)
+        B = row0
+        gen_pixels = torch.stack(gen_pixels_list).to(device, dtype=dtype)
+        query = query0.unsqueeze(0).repeat(B, 1)
         query_attn = torch.ones_like(query, dtype=torch.long)
-        pixels = torch.stack(
-            [process_image(image_processor, p) for p in region_paths]
-        ).to(device, dtype=dtype)
 
-        # ---- 2) rollout：生成 K 个区域描述 ----
+        # ---- 2) rollout：一次生成全部组的各视角描述 ----
         model.eval()
         with torch.no_grad():
             seqs = model.generate(
-                inputs=query, images=pixels, attention_mask=query_attn,
+                inputs=query, images=gen_pixels, attention_mask=query_attn,
                 do_sample=True, max_new_tokens=max_new,
                 pad_token_id=tokenizer.pad_token_id,
                 top_p=1.0, top_k=0, temperature=args.temperature,
             )
-        qlen = query.size(1)
-        responses = seqs[:, qlen:]  # (K, max_new)
-        captions = []
-        for r in responses:
-            r = r[r != tokenizer.pad_token_id]
-            captions.append(tokenizer.decode(r, skip_special_tokens=True).strip())
+        responses_all = seqs[:, qlen:]  # (B, max_new)
+        captions_all = []
+        for r_ in responses_all:
+            r_ = r_[r_ != tokenizer.pad_token_id]
+            captions_all.append(tokenizer.decode(r_, skip_special_tokens=True).strip())
 
-        # ---- 3) 组级 RCGR 奖励 + leave-one-out 基线 ----
-        rewards = compute_group_rewards(fg, region_paths, captions, neg_caption, device)
-        r = torch.tensor(rewards, device=device, dtype=torch.float32)
-        baseline = (r.sum() - r) / (K - 1)          # leave-one-out
-        advantage = r - baseline
+        # ---- 3) 逐组 RCGR 奖励 + 组内归一化 advantage（组间严格独立）----
+        for m in metas:
+            caps = captions_all[m["row0"]: m["row0"] + m["n_rows"]]
+            resp = responses_all[m["row0"]: m["row0"] + m["n_rows"]]
+            if m["metric_main_path"] is not None:      # 主图行只做 r_main 指标
+                cap_main, caps, resp = caps[-1], caps[:-1], resp[:-1]
+            else:
+                cap_main = caps[0] if (args.use_main_image and m["main_img"]) else None
+            rewards, reg_mean = compute_group_rewards(
+                fg, m["region_paths"], caps, m["neg_pool"], device,
+                alpha=args.alpha, beta=args.beta, eta=args.eta,
+                neg_mode=args.neg_mode, reg_weight=args.reg_weight)
+            r = torch.tensor(rewards, device=device, dtype=torch.float32)
+            # 组内归一化（GRPO 风格）：mean=0、单位方差，消除组间量纲差异，
+            # 使每步梯度尺度一致；std→0（组内无差异）时 advantage→0，自然跳过更新。
+            # adv clamp：组内 std 很小时 (r-mean)/std 会爆炸，单步大梯度会把投影层
+            # 推向输出坍缩吸引子（乱码→单 token 循环→logp 饱和为 0 死锁）。
+            m.update(resp=resp, r=r, reg_mean=reg_mean,
+                     adv=((r - r.mean()) / (r.std() + 1e-6)).clamp(-5.0, 5.0))
+            # 主图进度指标（只汇报，不参与梯度）
+            if cap_main is not None and m["main_img"]:
+                m["r_main"] = compute_main_reward(fg, m["main_img"], cap_main, m["neg_pool"],
+                                                  device, beta=args.beta, eta=args.eta,
+                                                  neg_mode=args.neg_mode)
+            else:
+                m["r_main"] = float("nan")
 
-        # ---- 4) 前向算 logprob（response 部分）----
+        # ---- 4) 逐组前向算 logprob，梯度累积后一次更新（显存 O(单组)，与全 batch 反传等价）----
+        # REINFORCE：loss = -mean_rows(advantage·logprob) = Σ_g -(adv_g·lp_g).sum()/N_train。
         model.train()
         model.config.use_cache = False
-        input_ids = torch.cat([query, responses], dim=1)  # (K, L+max_new)
-        attn = torch.cat(
-            [query_attn, responses.ne(tokenizer.pad_token_id).long()], dim=1
-        )
-        outputs = model(input_ids=input_ids, attention_mask=attn, images=pixels)
-        logits = outputs.logits  # (K, L+max_new, V)
-        resp_logits = logits[:, qlen - 1 : -1]  # 预测 responses[:, 0:max_new]
-        lp = compute_logprobs(resp_logits, responses, ignore_index=tokenizer.pad_token_id)
-        seq_lp = lp.sum(dim=1)  # (K,)
-
-        # REINFORCE：loss = -mean(advantage * logprob)
-        loss = -(advantage * seq_lp).mean()
+        n_train = sum(m["K"] for m in metas)
+        # 带图像前向时，query 里的每个 <image> 占位符会被展开成 m_img 个视觉 token，
+        # 预测 responses[:, 0] 的 logits 下标 = (qlen-1) + s*(m_img-1)。
+        s_img = int((query0 == IMAGE_TOKEN_INDEX).sum().item())
+        m_img = model.get_model().get_vision_tower().num_patches if s_img > 0 else 0
+        resp_start = qlen - 1 + s_img * (m_img - 1)
 
         optimizer.zero_grad(set_to_none=True)
-        loss.backward()
+        loss_val = 0.0
+        n_degenerate = 0
+        for m in metas:
+            k = m["K"]
+            ids = torch.cat([query0.unsqueeze(0).repeat(k, 1), m["resp"]], dim=1)
+            attn = torch.cat(
+                [torch.ones(k, qlen, dtype=torch.long, device=query0.device),
+                 m["resp"].ne(tokenizer.pad_token_id).long()], dim=1
+            )
+            logits = model(input_ids=ids, attention_mask=attn,
+                           images=gen_pixels[m["row0"]: m["row0"] + k]).logits
+            resp_logits = logits[:, resp_start:-1]  # 预测 responses[:, 0:max_new]
+            assert resp_logits.size(1) == m["resp"].size(1), (
+                f"resp_logits 长度 {resp_logits.size(1)} != responses 长度 {m['resp'].size(1)}"
+            )
+            lp = compute_logprobs(resp_logits, m["resp"], ignore_index=tokenizer.pad_token_id)
+            # 坍缩检测：logp 全零 = 模型对采样响应的置信度在 fp16 下饱和
+            # （输出退化为确定性 token 循环），此时 loss/梯度恒 0，训练无法自恢复。
+            # 跳过该组并在 step 末尾统计；连续多步全退化则硬停止，提示回滚 ckpt。
+            if lp.abs().max().item() < 1e-5:
+                n_degenerate += 1
+                continue
+            loss_g = -(m["adv"] * lp.sum(dim=1)).sum() / n_train
+            loss_g.backward()
+            loss_val += loss_g.item()
         torch.nn.utils.clip_grad_norm_(trainable, args.max_grad_norm)
         optimizer.step()
         model.config.use_cache = True
 
+        # 坍缩硬停止：连续多步所有组 logp 饱和（输出坍缩、梯度恒 0），继续跑无意义
+        collapse_steps = collapse_steps + 1 if n_degenerate == len(metas) else 0
+        if collapse_steps >= 5:
+            raise SystemExit(
+                f"[collapse] 连续 {collapse_steps} 步所有响应 logp 饱和（输出已坍缩为"
+                f"确定性 token 循环），训练无法自恢复。请回滚到最后一个有效 ckpt"
+                f"（权重范数仍在变化的最近一步），并降低 --lr 后重启。")
+
         if step % args.log_interval == 0:
+            rs = torch.cat([m["r"] for m in metas])
+            r_mains = [m["r_main"] for m in metas if m["r_main"] == m["r_main"]]
+            regs = [m["reg_mean"] for m in metas if m["reg_mean"] == m["reg_mean"]]
+            reg_str = f" reg={sum(regs) / len(regs):.4f}" if regs else ""
+            r_main_str = f"{sum(r_mains) / len(r_mains):.4f}" if r_mains else "nan"
+            deg_str = f" degenerate={n_degenerate}/{len(metas)}" if n_degenerate else ""
             print(
-                f"[{step}/{args.steps}] gid={gid} K={K} loss={loss.item():.4f} "
-                f"adv_mean={advantage.mean().item():.4f} "
-                f"r_mean={r.mean().item():.4f} r_min={r.min().item():.4f} r_max={r.max().item():.4f}"
+                f"[{step}/{args.steps}] G={len(metas)} B={n_train} loss={loss_val:.4f} "
+                f"r_mean={rs.mean().item():.4f} r_min={rs.min().item():.4f} r_max={rs.max().item():.4f} "
+                f"r_main={r_main_str}{reg_str}{deg_str}"
             )
+
+        # 每组指标落盘（同 step 多行；adv_mean 恒为 0，无信息量，不记录）
+        for m in metas:
+            log_csv.writerow([
+                step, m["gid"],
+                f"{loss_val:.6f}",
+                f"{m['r'].mean().item():.6f}",
+                f"{m['r'].min().item():.6f}",
+                f"{m['r'].max().item():.6f}",
+                f"{m['r_main']:.6f}",
+            ])
+        log_fp.flush()
 
         if (step + 1) % args.save_interval == 0 or step == args.steps - 1:
             save_path = os.path.join(args.output_dir, f"mm_projector_step{step + 1}.bin")
@@ -365,18 +583,35 @@ def train(args):
 
         step += 1
 
+    log_fp.close()
     print("训练完成。投影层保存在", args.output_dir)
+    print("指标曲线: python mvpg_run/plot_train_log.py --log", log_path)
 
 
 def main():
-    p = argparse.ArgumentParser(description="MVPG RL（REINFORCE + leave-one-out，只训投影层）")
-    p.add_argument("--image-dir", required=True, help="区域图目录（每子目录一组区域）")
+    p = argparse.ArgumentParser(description="MVPG RL（REINFORCE + 组均值基线，只训投影层）")
+    p.add_argument("--image-dir", required=True,
+                   help="数据目录（含根级 neg_captions.json 组索引；每子目录 = 主图 + 网格子图）")
     p.add_argument("--model-name", required=True, help="LLaVA 模型路径")
     p.add_argument("--output-dir", default=str(ROOT / "output" / "mvpg"), help="checkpoint 输出目录")
     p.add_argument("--fgclip-root", default=FGCLIP_ROOT, help="FG-CLIP2 权重目录")
     p.add_argument("--question", default=DEFAULT_QUESTION, help="生成 prompt")
-    p.add_argument("--steps", type=int, default=1000, help="训练步数")
-    p.add_argument("--lr", type=float, default=1e-4, help="投影层学习率")
+    p.add_argument("--steps", type=int, default=4848,
+                   help="训练步数（优化器更新次数；每步消耗 groups-per-step 个数据组）")
+    p.add_argument("--groups-per-step", type=int, default=4,
+                   help="每次更新同时处理的数据组数（数据并行维度；组间独立，"
+                        "reward/advantage 仍组内计算；G 个组拼接为一个大 rollout batch，"
+                        "前向反向按组累积梯度，显存占用与 G=1 相同）")
+    p.add_argument("--lr", type=float, default=3e-4, help="投影层学习率")
+    p.add_argument("--alpha", type=float, default=1.0, help="RCGR 跨区域竞争项系数")
+    p.add_argument("--beta", type=float, default=0.5, help="RCGR 负样本基线项系数")
+    p.add_argument("--eta", type=float, default=0.0, help="RCGR 长度惩罚系数")
+    p.add_argument("--neg-mode", choices=["first", "worst"], default="first",
+                   help="缺席难负例池用法：first=固定取池首条；worst=逐区域取最难一条")
+    p.add_argument("--reg-weight", type=float, default=0.0,
+                   help="区域结构对齐正则权重（reward shaping；<=0 关闭）")
+    p.add_argument("--use-main-image", action="store_true",
+                   help="把整图（下采样主图）并入组内作为额外视角参与 reward/优化")
     p.add_argument("--temperature", type=float, default=1.0)
     p.add_argument("--max-new-tokens", type=int, default=64)
     p.add_argument("--max-grad-norm", type=float, default=1.0)

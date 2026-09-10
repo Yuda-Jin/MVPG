@@ -21,7 +21,7 @@ import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from nltk.stem import *
 # from gpt4_grpc import Chat
-from openai import AzureOpenAI
+from openai import OpenAI
 from tqdm import tqdm
 
 
@@ -138,9 +138,8 @@ class CHAIR(object):
         self.coco_path = coco_path
 
         api_key = os.getenv("OPENAI_API_KEY")
-        self.client = AzureOpenAI(
-            api_version="2023-07-01-preview",
-            azure_endpoint=os.getenv("OPENAI_ENDPOINT"),
+        self.client = OpenAI(
+            base_url=os.getenv("OPENAI_ENDPOINT"),
             api_key=api_key,
         )
         self.gpt_model = gpt_model

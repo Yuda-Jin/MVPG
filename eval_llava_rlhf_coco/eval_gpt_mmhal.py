@@ -3,7 +3,7 @@ import argparse
 import json
 import time
 import os
-from openai import AzureOpenAI
+from openai import OpenAI
 
 template = '''Please act as an impartial and objective judge and evaluate the quality of the response provided by a Large Multimodal Model (LMM) to the user question. Your evaluation should be mainly based on whether the response is informative, and whether the response contains any hallucination. Hallucination, in this context, refers to a situation where the LMM generates a response that includes information not present or implied in the image or previous conversation. A hallucination could be a false claim about an object, action, emotion, or any other detail that is not grounded in the image.
 
@@ -85,9 +85,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     api_key = os.getenv("OPENAI_API_KEY")
-    client = AzureOpenAI(
-            api_version="2024-02-01",
-            azure_endpoint=os.getenv("OPENAI_ENDPOINT"),
+    client = OpenAI(
+            base_url=os.getenv("OPENAI_ENDPOINT"),
             api_key=api_key,
         )
 
