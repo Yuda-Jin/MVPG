@@ -1,0 +1,3393 @@
+{
+  "summary": {
+    "n_hall": 75,
+    "n_real": 300,
+    "hall_reward_mean": -0.0183386585821235,
+    "real_reward_mean": 0.004584664645530875,
+    "cohens_d": 1.2019758319338683,
+    "suppress_acc": 0.8933333333333333,
+    "encourage_acc": 0.5366666666666666,
+    "overall_acc": 0.608,
+    "hall_only_suppress_acc": 0.8933333333333333,
+    "hall_only_overall_acc": 0.622478386167147,
+    "gid_margin_gt0": 20,
+    "n_groups": 20
+  },
+  "rewarded": [
+    {
+      "gid": "sa_1000",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features an ancient wall painting depicting two figures standing close together against a weathered orange and beige background",
+      "s_box": 0.23793397843837738,
+      "s_short": 0.18362191319465637,
+      "reward": 0.020343195647001266
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The figure on the left is a shirtless man with elaborate tattoos and a dark headdress",
+      "s_box": 0.2229887843132019,
+      "s_short": 0.18793030083179474,
+      "reward": 0.00539800152182579
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "while the figure on the right wears a green jacket over a striped skirt",
+      "s_box": 0.20510578155517578,
+      "s_short": 0.17485873401165009,
+      "reward": -0.012485001236200333
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A small brown dog rests at their feet near the bottom of the mural",
+      "s_box": 0.2043345868587494,
+      "s_short": 0.1600392460823059,
+      "reward": -0.013256195932626724
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2944851517677307,
+      "s_short": 0.289497047662735,
+      "reward": 0.05828554928302765
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a traditional mural shows a man and a woman in ornate clothing painted on a rough plaster wall",
+      "s_box": 0.22743770480155945,
+      "s_short": 0.18241345882415771,
+      "reward": -0.008761897683143616
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "The man is leaning in to whisper to the woman",
+      "s_box": 0.23349469900131226,
+      "s_short": 0.17818766832351685,
+      "reward": -0.002704903483390808
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "who has her hair tied up in a bun and wears a patterned lower garment",
+      "s_box": 0.23923979699611664,
+      "s_short": 0.18278881907463074,
+      "reward": 0.0030401945114135742
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A woven basket filled with fruit sits on the ground between the two figures",
+      "s_box": 0.18634065985679626,
+      "s_short": 0.12085112184286118,
+      "reward": -0.0498589426279068
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image displays a faded mural on a textured wall",
+      "s_box": 0.22538946568965912,
+      "s_short": 0.13340255618095398,
+      "reward": 0.0013405382633209229
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "featuring a tattooed man in a headdress conversing with a woman in a green jacket",
+      "s_box": 0.24186678230762482,
+      "s_short": 0.18991389870643616,
+      "reward": 0.01781785488128662
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The woman's face is obscured",
+      "s_box": 0.2246861457824707,
+      "s_short": 0.17642593383789062,
+      "reward": 0.0006372183561325073
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and she wears a long skirt with horizontal stripes of orange",
+      "s_box": 0.2204623967409134,
+      "s_short": 0.16002601385116577,
+      "reward": -0.0035865306854248047
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A brass oil lamp hangs from the ceiling above the couple",
+      "s_box": 0.20783984661102295,
+      "s_short": 0.1709522008895874,
+      "reward": -0.016209080815315247
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image shows a piece of ancient wall art with two human figures painted in a traditional style",
+      "s_box": 0.23762506246566772,
+      "s_short": 0.20608800649642944,
+      "reward": 0.0220751091837883
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "On the left",
+      "s_box": 0.26122742891311646,
+      "s_short": 0.24441273510456085,
+      "reward": 0.04567747563123703
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "a bare-chested man with red tattoo patterns leans toward a woman wearing a dark green top and a striped skirt",
+      "s_box": 0.1615796983242035,
+      "s_short": 0.08921537548303604,
+      "reward": -0.053970254957675934
+    },
+    {
+      "gid": "sa_1000",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A wooden ladder leans against the wall in the background behind the woman",
+      "s_box": 0.20176762342453003,
+      "s_short": 0.14170706272125244,
+      "reward": -0.013782329857349396
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a white Honda race car driving on an asphalt track",
+      "s_box": 0.21124659478664398,
+      "s_short": 0.15196210145950317,
+      "reward": 0.012246489524841309
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "with a grassy verge visible along the right side",
+      "s_box": 0.18600128591060638,
+      "s_short": 0.12990860641002655,
+      "reward": -0.012998819351196289
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The car has an orange and blue livery with the number 16 on the windshield",
+      "s_box": 0.2108771800994873,
+      "s_short": 0.16033509373664856,
+      "reward": 0.011877074837684631
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "and a checkered flag waves from a pole near the track edge",
+      "s_box": 0.18787536025047302,
+      "s_short": 0.11435336619615555,
+      "reward": -0.011124745011329651
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.24430596828460693,
+      "s_short": 0.24033668637275696,
+      "reward": 0.03701513260602951
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a white racing car with orange and blue accents is moving along a paved track beside a strip of green grass",
+      "s_box": 0.1901969313621521,
+      "s_short": 0.14522188901901245,
+      "reward": -0.017093904316425323
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A black and white checkered flag is being waved in the background",
+      "s_box": 0.176643967628479,
+      "s_short": 0.11691546440124512,
+      "reward": -0.03064686805009842
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "and the driver is visible through the windshield",
+      "s_box": 0.21801647543907166,
+      "s_short": 0.17906785011291504,
+      "reward": 0.010725639760494232
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a white Honda race car with the number 16 on its windshield driving on an asphalt surface",
+      "s_box": 0.25784385204315186,
+      "s_short": 0.18624931573867798,
+      "reward": 0.053971787293752044
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A checkered flag hangs from a nearby pole",
+      "s_box": 0.1653328239917755,
+      "s_short": 0.1290062814950943,
+      "reward": -0.0385392407576243
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and a grassy area borders the right side of the track",
+      "s_box": 0.1884395182132721,
+      "s_short": 0.14708232879638672,
+      "reward": -0.015432546536127717
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This scene captures a white race car with orange and blue graphics speeding along an asphalt track",
+      "s_box": 0.22161099314689636,
+      "s_short": 0.15407995879650116,
+      "reward": 0.019850969314575195
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A checkered flag is visible in the distance",
+      "s_box": 0.18297597765922546,
+      "s_short": 0.13100406527519226,
+      "reward": -0.018784046173095703
+    },
+    {
+      "gid": "sa_183",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and the car's number 16 is clearly displayed on the windshield",
+      "s_box": 0.20069310069084167,
+      "s_short": 0.14571243524551392,
+      "reward": -0.0010669231414794922
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a group of five women walking across a paved plaza in front of a white building with classical columns",
+      "s_box": 0.2692238986492157,
+      "s_short": 0.14928555488586426,
+      "reward": 0.05211612582206726
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A large brown dog is walking alongside the women on the stone path",
+      "s_box": 0.19852697849273682,
+      "s_short": 0.11755168437957764,
+      "reward": -0.01858079433441162
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "and lush green trees provide shade in the background",
+      "s_box": 0.1835724413394928,
+      "s_short": 0.13174107670783997,
+      "reward": -0.03353533148765564
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.26628413796424866,
+      "s_short": 0.2478320598602295,
+      "reward": 0.0503416508436203
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "several women are strolling outdoors on a sunny day near a building with tall pillars",
+      "s_box": 0.19408895075321198,
+      "s_short": 0.14204369485378265,
+      "reward": -0.021853536367416382
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "One woman in an orange shirt and green pants is reaching out her hand",
+      "s_box": 0.2141026109457016,
+      "s_short": 0.138950914144516,
+      "reward": -0.0018398761749267578
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "while a red bicycle is parked against the tree behind her",
+      "s_box": 0.1892942488193512,
+      "s_short": 0.10466375946998596,
+      "reward": -0.02664823830127716
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The scene shows a group of women walking in a line across a stone courtyard in front of an elegant building",
+      "s_box": 0.20616772770881653,
+      "s_short": 0.15832534432411194,
+      "reward": -0.0007246534029642648
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A child in a blue jacket is running ahead of the group",
+      "s_box": 0.20106488466262817,
+      "s_short": 0.11688479781150818,
+      "reward": -0.005827496449152619
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and green foliage surrounds the area",
+      "s_box": 0.2134445309638977,
+      "s_short": 0.19017519056797028,
+      "reward": 0.006552149852116912
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image captures a group of five women walking together on a paved surface near a white building with columns",
+      "s_box": 0.24272406101226807,
+      "s_short": 0.1550111174583435,
+      "reward": 0.02248994509379068
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A wooden park bench is visible on the grass to the right",
+      "s_box": 0.189336895942688,
+      "s_short": 0.09430058300495148,
+      "reward": -0.030897219975789397
+    },
+    {
+      "gid": "sa_2646",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and the women are dressed in colorful casual clothing",
+      "s_box": 0.22864139080047607,
+      "s_short": 0.18284881114959717,
+      "reward": 0.008407274881998689
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a busy street scene with a group of men gathered around a cycle rickshaw",
+      "s_box": 0.22956708073616028,
+      "s_short": 0.1603306233882904,
+      "reward": 0.022986046969890594
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A man in a blue blazer is handing a white paper to a rickshaw puller wearing a maroon shirt",
+      "s_box": 0.2093266099691391,
+      "s_short": 0.1573513001203537,
+      "reward": 0.0027455762028694153
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "while a yellow and black auto-rickshaw is parked in the background",
+      "s_box": 0.19989316165447235,
+      "s_short": 0.14210282266139984,
+      "reward": -0.006687872111797333
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A red fire hydrant stands on the sidewalk near the edge of the street",
+      "s_box": 0.187537282705307,
+      "s_short": 0.11354830861091614,
+      "reward": -0.019043751060962677
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.27544254064559937,
+      "s_short": 0.2651917636394501,
+      "reward": 0.057143141825993865
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a crowd of people is interacting on a city street",
+      "s_box": 0.2234342396259308,
+      "s_short": 0.16546866297721863,
+      "reward": 0.005134840806325286
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "with a man in a suit holding documents",
+      "s_box": 0.222299724817276,
+      "s_short": 0.18476423621177673,
+      "reward": 0.004000325997670501
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "A rickshaw puller in a plaid lungi receives a paper from him",
+      "s_box": 0.21000728011131287,
+      "s_short": 0.1528393030166626,
+      "reward": -0.008292118708292634
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "and a yellow auto-rickshaw is visible behind the group",
+      "s_box": 0.19440805912017822,
+      "s_short": 0.11872279644012451,
+      "reward": -0.023891339699427278
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "A brown leather briefcase rests on the ground next to the man in the suit",
+      "s_box": 0.18420454859733582,
+      "s_short": 0.13613663613796234,
+      "reward": -0.034094850222269685
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a street gathering where a man in a blue blazer distributes papers to a rickshaw driver",
+      "s_box": 0.21565191447734833,
+      "s_short": 0.18389420211315155,
+      "reward": -0.007422018796205521
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "Several onlookers stand nearby",
+      "s_box": 0.28090807795524597,
+      "s_short": 0.25316309928894043,
+      "reward": 0.05783414468169212
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and a yellow auto-rickshaw is parked in the background",
+      "s_box": 0.20062893629074097,
+      "s_short": 0.12737205624580383,
+      "reward": -0.02244499698281288
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A wooden park bench is positioned against the building wall on the left side of the scene",
+      "s_box": 0.19510680437088013,
+      "s_short": 0.1413269191980362,
+      "reward": -0.02796712890267372
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image captures a moment on a crowded street with a man in a suit handing a document to a rickshaw puller",
+      "s_box": 0.23290644586086273,
+      "s_short": 0.16633619368076324,
+      "reward": 0.02320074290037155
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A group of men watches the exchange",
+      "s_box": 0.20829004049301147,
+      "s_short": 0.16992834210395813,
+      "reward": -0.0014156624674797058
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and a yellow auto-rickshaw is parked behind them",
+      "s_box": 0.19486398994922638,
+      "s_short": 0.12442120164632797,
+      "reward": -0.014841713011264801
+    },
+    {
+      "gid": "sa_3439",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A black street lamp post rises above the crowd on the right side of the frame",
+      "s_box": 0.20276233553886414,
+      "s_short": 0.13846838474273682,
+      "reward": -0.006943367421627045
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features an ancient stone temple complex with ornate carvings",
+      "s_box": 0.1977095901966095,
+      "s_short": 0.13205550611019135,
+      "reward": -0.008847445249557495
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "set against a backdrop of lush green mountains and a cloudy sky",
+      "s_box": 0.20721572637557983,
+      "s_short": 0.1606023609638214,
+      "reward": 0.0006586909294128418
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A group of visitors is walking along a dirt path in the grassy foreground",
+      "s_box": 0.2180992066860199,
+      "s_short": 0.1565232276916504,
+      "reward": 0.011542171239852905
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "and a large stone statue of a lion stands near the entrance of the ruins",
+      "s_box": 0.20320361852645874,
+      "s_short": 0.17707407474517822,
+      "reward": -0.003353416919708252
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.25660955905914307,
+      "s_short": 0.23798705637454987,
+      "reward": 0.03258612006902695
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a weathered stone temple with intricate architecture stretches across a grassy field beneath overcast skies",
+      "s_box": 0.2114100456237793,
+      "s_short": 0.15222471952438354,
+      "reward": -0.012613393366336823
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "Several tourists are scattered across the lawn taking photos",
+      "s_box": 0.2061307728290558,
+      "s_short": 0.18118514120578766,
+      "reward": -0.017892666161060333
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "while a wooden rowboat rests on the grass near the left side of the temple",
+      "s_box": 0.22194337844848633,
+      "s_short": 0.18285967409610748,
+      "reward": -0.0020800605416297913
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a historic temple ruin surrounded by green hills and dense vegetation under a cloudy sky",
+      "s_box": 0.1794360727071762,
+      "s_short": 0.1634335219860077,
+      "reward": -0.02188234031200409
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "People are strolling along a path in the foreground",
+      "s_box": 0.22921451926231384,
+      "s_short": 0.1779751479625702,
+      "reward": 0.027896106243133545
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "and a tall metal flagpole stands prominently in the center of the courtyard",
+      "s_box": 0.19530464708805084,
+      "s_short": 0.14990319311618805,
+      "reward": -0.006013765931129456
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This scene captures an old stone temple with detailed carvings and a grassy courtyard under a cloudy sky",
+      "s_box": 0.20746339857578278,
+      "s_short": 0.1662328541278839,
+      "reward": -0.005587294697761536
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "Visitors are walking around the site",
+      "s_box": 0.2233666181564331,
+      "s_short": 0.190580353140831,
+      "reward": 0.010315924882888794
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "and a small campfire is burning in the middle of the field",
+      "s_box": 0.19049984216690063,
+      "s_short": 0.13424019515514374,
+      "reward": -0.022550851106643677
+    },
+    {
+      "gid": "sa_4286",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "with mountains rising in the background",
+      "s_box": 0.23087291419506073,
+      "s_short": 0.17508754134178162,
+      "reward": 0.01782222092151642
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a decorative street sign mounted on a textured beige wall",
+      "s_box": 0.2022508978843689,
+      "s_short": 0.14879587292671204,
+      "reward": -0.006344193220138544
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The sign is made of white ceramic tiles with blue and yellow floral patterns",
+      "s_box": 0.1904316246509552,
+      "s_short": 0.14339657127857208,
+      "reward": -0.01816346645355224
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "displaying the text 'AVINGUDA DE LA MARINA BAIXA'",
+      "s_box": 0.20520901679992676,
+      "s_short": 0.14138273894786835,
+      "reward": -0.003386074304580683
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A small black bird is perched on the top edge of the sign",
+      "s_box": 0.19233295321464539,
+      "s_short": 0.15323872864246368,
+      "reward": -0.016262137889862055
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "looking down at the lettering",
+      "s_box": 0.252750962972641,
+      "s_short": 0.23545882105827332,
+      "reward": 0.04415587186813355
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.29385364055633545,
+      "s_short": 0.28971320390701294,
+      "reward": 0.07365372031927109
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a tiled street sign reading 'AVINGUDA DE LA MARINA BAIXA' is affixed to a rough stucco wall",
+      "s_box": 0.19917690753936768,
+      "s_short": 0.1493259072303772,
+      "reward": -0.021023012697696686
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "The white tiles are framed by ornate blue scrollwork and yellow flowers",
+      "s_box": 0.20252129435539246,
+      "s_short": 0.13776125013828278,
+      "reward": -0.017678625881671906
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A brass mailbox is attached to the wall directly below the sign",
+      "s_box": 0.18524783849716187,
+      "s_short": 0.13259191811084747,
+      "reward": -0.034952081739902496
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image displays a ceramic street plaque composed of several white tiles set into a stone wall",
+      "s_box": 0.18290987610816956,
+      "s_short": 0.11945615708827972,
+      "reward": -0.007791779935359955
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The tiles feature the name 'AVINGUDA DE LA MARINA BAIXA' in black serif letters",
+      "s_box": 0.20870622992515564,
+      "s_short": 0.11930015683174133,
+      "reward": 0.01800457388162613
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "surrounded by blue and yellow decorative motifs",
+      "s_box": 0.18506813049316406,
+      "s_short": 0.16219346225261688,
+      "reward": -0.005633525550365448
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A potted green plant sits on a ledge just to the right of the sign",
+      "s_box": 0.18612238764762878,
+      "s_short": 0.16461226344108582,
+      "reward": -0.004579268395900726
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This scene shows a close-up of a tiled street sign on a beige exterior wall",
+      "s_box": 0.17665939033031464,
+      "s_short": 0.12104582041501999,
+      "reward": -0.014785091082255036
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "The sign bears the text 'AVINGUDA DE LA MARINA BAIXA' with blue and yellow ornamental borders",
+      "s_box": 0.20560312271118164,
+      "s_short": 0.13520066440105438,
+      "reward": 0.014158641298611968
+    },
+    {
+      "gid": "sa_5122",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A set of keys is hanging from a hook on the wall next to the bottom corner of the sign",
+      "s_box": 0.19207093119621277,
+      "s_short": 0.1347675621509552,
+      "reward": 0.000626449783643096
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features an outdoor urban scene with a group of people gathered on a paved plaza",
+      "s_box": 0.22647035121917725,
+      "s_short": 0.1506088674068451,
+      "reward": 0.0009493529796600342
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A man in a dark blue jacket stands in the foreground holding a water bottle",
+      "s_box": 0.21515533328056335,
+      "s_short": 0.17870554327964783,
+      "reward": -0.010365664958953857
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "while others converse near a blue promotional booth",
+      "s_box": 0.20564058423042297,
+      "s_short": 0.1707506626844406,
+      "reward": -0.01988041400909424
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A large yellow construction crane is visible in the background against a cloudy sky",
+      "s_box": 0.2794918417930603,
+      "s_short": 0.20924147963523865,
+      "reward": 0.05397084355354309
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A brown dog on a leash is standing near the group of people on the left side of the plaza",
+      "s_box": 0.20084688067436218,
+      "s_short": 0.14833590388298035,
+      "reward": -0.02467411756515503
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.26623865962028503,
+      "s_short": 0.25581684708595276,
+      "reward": 0.04485079646110535
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a crowd of people is standing on a tiled square in front of a blue booth labeled 'Skolan först'",
+      "s_box": 0.22043289244174957,
+      "s_short": 0.15567326545715332,
+      "reward": -0.0009549707174301147
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "A man in a floral shirt and black pants is walking away from the camera in the foreground",
+      "s_box": 0.19013839960098267,
+      "s_short": 0.14979501068592072,
+      "reward": -0.03124946355819702
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "To the left",
+      "s_box": 0.22328197956085205,
+      "s_short": 0.20732992887496948,
+      "reward": 0.0018941164016723633
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "a tall yellow crane reaches into the overcast sky above the buildings",
+      "s_box": 0.20581629872322083,
+      "s_short": 0.1578710526227951,
+      "reward": -0.015571564435958862
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A red bicycle is parked leaning against the booth on the right side of the scene",
+      "s_box": 0.22241894900798798,
+      "s_short": 0.14285004138946533,
+      "reward": 0.0010310858488082886
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a public event taking place on a stone-paved area with several individuals milling about",
+      "s_box": 0.19629481434822083,
+      "s_short": 0.16017432510852814,
+      "reward": -0.013783055543899525
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A man in a dark jacket and jeans stands prominently in the foreground",
+      "s_box": 0.22181349992752075,
+      "s_short": 0.17035172879695892,
+      "reward": 0.011735630035400402
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "while a person in a floral shirt walks towards the right",
+      "s_box": 0.2228270173072815,
+      "s_short": 0.18735426664352417,
+      "reward": 0.012749147415161144
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A blue tent structure with a banner is set up in the middle ground",
+      "s_box": 0.2118210792541504,
+      "s_short": 0.16655530035495758,
+      "reward": 0.0017432093620300404
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A green park bench is situated on the far left edge of the pavement near the crowd",
+      "s_box": 0.19763293862342834,
+      "s_short": 0.1378527134656906,
+      "reward": -0.012444931268692005
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This scene depicts an outdoor gathering on a paved plaza under a cloudy sky",
+      "s_box": 0.23465532064437866,
+      "s_short": 0.18401756882667542,
+      "reward": 0.021442269285519927
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "with a focus on a blue booth and several attendees",
+      "s_box": 0.21768933534622192,
+      "s_short": 0.16952335834503174,
+      "reward": 0.004476283987363189
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A man wearing a blue jacket and jeans is seen from behind in the foreground",
+      "s_box": 0.20545609295368195,
+      "s_short": 0.1623138189315796,
+      "reward": -0.007756958405176789
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and a woman in a floral blouse is walking nearby",
+      "s_box": 0.2388203740119934,
+      "s_short": 0.1914205700159073,
+      "reward": 0.025607322653134673
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A yellow construction crane towers over the buildings in the background",
+      "s_box": 0.19039255380630493,
+      "s_short": 0.16188505291938782,
+      "reward": -0.022820497552553803
+    },
+    {
+      "gid": "sa_5954",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A silver motorcycle is parked on the right side of the plaza next to the booth",
+      "s_box": 0.1922646313905716,
+      "s_short": 0.13599687814712524,
+      "reward": -0.02094841996828714
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features an elevated concrete walkway leading toward a large modern building complex under a bright blue sky",
+      "s_box": 0.2004500925540924,
+      "s_short": 0.13138487935066223,
+      "reward": -0.013689076900482183
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "In the distance",
+      "s_box": 0.2479097843170166,
+      "s_short": 0.23851357400417328,
+      "reward": 0.03377061486244201
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "a tall cylindrical tower with a prominent logo stands next to a bowl-shaped structure",
+      "s_box": 0.1962936818599701,
+      "s_short": 0.13172554969787598,
+      "reward": -0.017845487594604498
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A red double-decker bus is parked on the road to the left",
+      "s_box": 0.20840206742286682,
+      "s_short": 0.12684164941310883,
+      "reward": -0.005737102031707769
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "near the grassy areas and trees",
+      "s_box": 0.217640221118927,
+      "s_short": 0.1647139936685562,
+      "reward": 0.0035010516643524114
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.25886136293411255,
+      "s_short": 0.2450418472290039,
+      "reward": 0.04343796968460084
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a wide pedestrian ramp curves alongside a modern building with a large glass facade",
+      "s_box": 0.20165738463401794,
+      "s_short": 0.13068677484989166,
+      "reward": -0.013766008615493763
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "The iconic four-cylinder tower and the adjacent museum are visible against a partly cloudy sky",
+      "s_box": 0.17982515692710876,
+      "s_short": 0.12806788086891174,
+      "reward": -0.03559823632240294
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A group of cyclists is riding along the paved path in the foreground",
+      "s_box": 0.20219486951828003,
+      "s_short": 0.13638469576835632,
+      "reward": -0.013228523731231678
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "passing by the metal railings",
+      "s_box": 0.2345781922340393,
+      "s_short": 0.19879284501075745,
+      "reward": 0.0191547989845276
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image features a view from a concrete walkway looking out over a city plaza with modern architecture",
+      "s_box": 0.21954184770584106,
+      "s_short": 0.1430586278438568,
+      "reward": 0.011510051786899567
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A tall tower with a blue and white logo dominates the skyline next to a silver bowl-shaped building",
+      "s_box": 0.1895764023065567,
+      "s_short": 0.16846786439418793,
+      "reward": -0.018455393612384796
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A large fountain is spraying water in the center of the plaza",
+      "s_box": 0.19860045611858368,
+      "s_short": 0.11042016744613647,
+      "reward": -0.009431339800357819
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "surrounded by small trees and walkways",
+      "s_box": 0.22440847754478455,
+      "s_short": 0.16744059324264526,
+      "reward": 0.016376681625843048
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image shows an urban scene with a wide concrete path bordered by a metal railing on the right",
+      "s_box": 0.20025451481342316,
+      "s_short": 0.14026543498039246,
+      "reward": -0.01203688681125642
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "In the background",
+      "s_box": 0.2333536446094513,
+      "s_short": 0.22101546823978424,
+      "reward": 0.021062242984771717
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "a tall cylindrical tower and a modern exhibition center are visible under a sunny sky",
+      "s_box": 0.20128053426742554,
+      "s_short": 0.13905830681324005,
+      "reward": -0.01101086735725404
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A yellow taxi cab is driving down the street on the left side",
+      "s_box": 0.20511634647846222,
+      "s_short": 0.14495910704135895,
+      "reward": -0.007175055146217357
+    },
+    {
+      "gid": "sa_6749",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "passing by the green trees and streetlights",
+      "s_box": 0.22145196795463562,
+      "s_short": 0.15419411659240723,
+      "reward": 0.009160566329956044
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a street-side scene with several parked scooters in the foreground",
+      "s_box": 0.2146952599287033,
+      "s_short": 0.14653077721595764,
+      "reward": -0.0031625876824060983
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "including a bright orange one and a green one",
+      "s_box": 0.22129762172698975,
+      "s_short": 0.19775764644145966,
+      "reward": 0.0034397741158803397
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A group of people is gathered near a closed metal shutter",
+      "s_box": 0.19983436167240143,
+      "s_short": 0.13375329971313477,
+      "reward": -0.018023485938707978
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "where a woman in a white top is raising her hand",
+      "s_box": 0.22535240650177002,
+      "s_short": 0.15884147584438324,
+      "reward": 0.007494558890660613
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A small brown dog is sleeping on the ground near the scooters",
+      "s_box": 0.187963604927063,
+      "s_short": 0.1294841170310974,
+      "reward": -0.029894242684046418
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "adding to the casual atmosphere",
+      "s_box": 0.258003830909729,
+      "s_short": 0.2502167522907257,
+      "reward": 0.0401459832986196
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.271075576543808,
+      "s_short": 0.26208481192588806,
+      "reward": 0.042889188442911425
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a group of people stands outside a building with a gray roll-up door",
+      "s_box": 0.1915334165096283,
+      "s_short": 0.1483331322669983,
+      "reward": -0.03665297159126826
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "surrounded by parked motorbikes",
+      "s_box": 0.24168123304843903,
+      "s_short": 0.1751798838376999,
+      "reward": 0.013494844947542467
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "A man in a blue shirt is leaning over a black trash bin",
+      "s_box": 0.21663740277290344,
+      "s_short": 0.14923599362373352,
+      "reward": -0.011548985327993117
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "while a woman in a white tank top gestures nearby",
+      "s_box": 0.2499101459980011,
+      "s_short": 0.21394598484039307,
+      "reward": 0.02172375789710454
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A red bicycle is parked against the wall next to the bin",
+      "s_box": 0.1792278289794922,
+      "s_short": 0.10854512453079224,
+      "reward": -0.04895855912140437
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "completing the street scene",
+      "s_box": 0.2472391128540039,
+      "s_short": 0.2083934247493744,
+      "reward": 0.019052724753107347
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a casual outdoor gathering with several individuals standing near a storefront with a closed metal shutter",
+      "s_box": 0.2029663324356079,
+      "s_short": 0.15692263841629028,
+      "reward": -0.020371836920579284
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "In the foreground",
+      "s_box": 0.25607138872146606,
+      "s_short": 0.2435576319694519,
+      "reward": 0.03273321936527887
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "a line of scooters is parked",
+      "s_box": 0.17311535775661469,
+      "s_short": 0.13386009633541107,
+      "reward": -0.05022281159957251
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "including a prominent orange one and a blue one",
+      "s_box": 0.22065699100494385,
+      "s_short": 0.2043856382369995,
+      "reward": -0.0026811783512433462
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A cat is sitting on the seat of the blue scooter",
+      "s_box": 0.2049768567085266,
+      "s_short": 0.13837963342666626,
+      "reward": -0.018361312647660583
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "watching the people nearby",
+      "s_box": 0.282242089509964,
+      "s_short": 0.27356278896331787,
+      "reward": 0.058903920153776795
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This scene depicts a group of people socializing on a sidewalk in front of a building with a large metal door",
+      "s_box": 0.20949119329452515,
+      "s_short": 0.1373601257801056,
+      "reward": -0.014627409478028625
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "such as a green and black one",
+      "s_box": 0.21582460403442383,
+      "s_short": 0.18654188513755798,
+      "reward": -0.008293998738129943
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "are parked in the foreground",
+      "s_box": 0.24876749515533447,
+      "s_short": 0.21563400328159332,
+      "reward": 0.0246488923827807
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and a man in a black shirt with white stars is sitting on the right",
+      "s_box": 0.2141687422990799,
+      "s_short": 0.16682961583137512,
+      "reward": -0.009949860473473876
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A wooden bench is placed behind the group",
+      "s_box": 0.21106286346912384,
+      "s_short": 0.14068740606307983,
+      "reward": -0.01305573930342993
+    },
+    {
+      "gid": "sa_7547",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "providing seating for the area",
+      "s_box": 0.2453967183828354,
+      "s_short": 0.2281653881072998,
+      "reward": 0.021278115610281617
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a quaint European street scene centered on a bronze statue of a man standing on a stone pedestal",
+      "s_box": 0.24092382192611694,
+      "s_short": 0.17552721500396729,
+      "reward": 0.007890217006206512
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "To the left",
+      "s_box": 0.22588956356048584,
+      "s_short": 0.21752142906188965,
+      "reward": -0.007144041359424591
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "there is a building with a tiled roof and a hanging sign",
+      "s_box": 0.22001823782920837,
+      "s_short": 0.17018888890743256,
+      "reward": -0.013015367090702057
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "while a white car is parked further down the road",
+      "s_box": 0.23483413457870483,
+      "s_short": 0.19435355067253113,
+      "reward": 0.001800529658794403
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A street lamp stands nearby",
+      "s_box": 0.249678835272789,
+      "s_short": 0.22283592820167542,
+      "reward": 0.01664523035287857
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "and a wooden bench sits empty in the foreground square",
+      "s_box": 0.2268570363521576,
+      "s_short": 0.17401623725891113,
+      "reward": -0.006176568567752838
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.28251391649246216,
+      "s_short": 0.2728865146636963,
+      "reward": 0.05638894736766814
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a statue of a historical figure stands prominently in the middle of a cobblestone square",
+      "s_box": 0.1946534812450409,
+      "s_short": 0.1557626873254776,
+      "reward": -0.031471487879753124
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "Behind the monument",
+      "s_box": 0.277547687292099,
+      "s_short": 0.2675350308418274,
+      "reward": 0.05142271816730498
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a large green tree rises above the tiled roofs of nearby buildings",
+      "s_box": 0.20229363441467285,
+      "s_short": 0.15716226398944855,
+      "reward": -0.023831334710121166
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A blue bicycle is leaning against the wall of the building on the right side of the street",
+      "s_box": 0.17361612617969513,
+      "s_short": 0.11038611829280853,
+      "reward": -0.05250884294509889
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a town square featuring a tall statue on a dark stone plinth",
+      "s_box": 0.19614706933498383,
+      "s_short": 0.15977567434310913,
+      "reward": -0.007403664290904999
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "surrounded by buildings with orange tiled roofs",
+      "s_box": 0.2126435935497284,
+      "s_short": 0.17227254807949066,
+      "reward": 0.009092859923839569
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A black van and a white car are parked in the background near a large tree",
+      "s_box": 0.18900847434997559,
+      "s_short": 0.1406714916229248,
+      "reward": -0.014542259275913239
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A small fountain is visible in the lower right corner of the paved area",
+      "s_box": 0.2164037972688675,
+      "s_short": 0.16902734339237213,
+      "reward": 0.012853063642978668
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This scene depicts a sunny street with a statue of a man in historical clothing standing on a pedestal in the center",
+      "s_box": 0.20636089146137238,
+      "s_short": 0.1621484011411667,
+      "reward": -0.017041459679603577
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "Buildings with tiled roofs flank the street",
+      "s_box": 0.24784459173679352,
+      "s_short": 0.19036780297756195,
+      "reward": 0.024442240595817566
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and a white car is parked in the distance",
+      "s_box": 0.2280869483947754,
+      "s_short": 0.17915832996368408,
+      "reward": 0.0046845972537994385
+    },
+    {
+      "gid": "sa_8367",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A group of pigeons is gathered on the cobblestones directly in front of the statue's base",
+      "s_box": 0.21131697297096252,
+      "s_short": 0.17426347732543945,
+      "reward": -0.012085378170013428
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a police officer on a large blue and white motorcycle parked on a paved road",
+      "s_box": 0.2605215311050415,
+      "s_short": 0.17098167538642883,
+      "reward": 0.010090023279190063
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "In the background",
+      "s_box": 0.27196982502937317,
+      "s_short": 0.24970778822898865,
+      "reward": 0.02153831720352173
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "a blue truck and a silver car are driving along the highway",
+      "s_box": 0.2458847463130951,
+      "s_short": 0.1656402051448822,
+      "reward": -0.004546761512756348
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "and a small motorcycle with two riders is approaching from the left",
+      "s_box": 0.25309595465660095,
+      "s_short": 0.16670119762420654,
+      "reward": 0.0026644468307495117
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A red stop sign is visible on the grassy shoulder near the road",
+      "s_box": 0.22068548202514648,
+      "s_short": 0.14695081114768982,
+      "reward": -0.029746025800704956
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2840619683265686,
+      "s_short": 0.26510995626449585,
+      "reward": 0.04112723767757415
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a police officer in a dark uniform sits on a white and blue motorcycle under a clear blue sky",
+      "s_box": 0.24469833076000214,
+      "s_short": 0.15226267278194427,
+      "reward": 0.0017636001110076793
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a blue truck and a silver car travel down the road",
+      "s_box": 0.23709380626678467,
+      "s_short": 0.17030152678489685,
+      "reward": -0.005840924382209789
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "while a smaller motorcycle carrying two people rides in the left lane",
+      "s_box": 0.22941866517066956,
+      "s_short": 0.17953117191791534,
+      "reward": -0.013516065478324901
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A wooden bench is placed on the grass beside the highway",
+      "s_box": 0.21940088272094727,
+      "s_short": 0.10911450535058975,
+      "reward": -0.02353384792804719
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a traffic scene on a sunny day with a police officer on a blue and white motorcycle in the foreground",
+      "s_box": 0.22690197825431824,
+      "s_short": 0.1651163101196289,
+      "reward": -0.015353888273239136
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "In the background",
+      "s_box": 0.27196982502937317,
+      "s_short": 0.24970778822898865,
+      "reward": 0.029713958501815796
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "a blue truck and a silver car are on the road",
+      "s_box": 0.2267167568206787,
+      "s_short": 0.15246154367923737,
+      "reward": -0.015539109706878662
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and a small motorcycle with two riders is approaching",
+      "s_box": 0.26378652453422546,
+      "s_short": 0.18386779725551605,
+      "reward": 0.02153065800666809
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A brown dog is walking along the side of the road near the vehicles",
+      "s_box": 0.22190424799919128,
+      "s_short": 0.12983332574367523,
+      "reward": -0.02035161852836609
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image captures a police officer on a large blue and white motorcycle on a paved highway",
+      "s_box": 0.2842411696910858,
+      "s_short": 0.17892566323280334,
+      "reward": 0.03821033611893654
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "a blue truck and a silver car are driving",
+      "s_box": 0.2443787306547165,
+      "s_short": 0.1830517202615738,
+      "reward": -0.001652102917432785
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and a smaller motorcycle with two riders is visible on the left",
+      "s_box": 0.24465760588645935,
+      "s_short": 0.1567455232143402,
+      "reward": -0.0013732276856899261
+    },
+    {
+      "gid": "sa_9166",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A yellow bicycle is leaning against the guardrail in the distance",
+      "s_box": 0.21084582805633545,
+      "s_short": 0.11676347255706787,
+      "reward": -0.03518500551581383
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a marina filled with calm turquoise water",
+      "s_box": 0.21969670057296753,
+      "s_short": 0.14510229229927063,
+      "reward": 0.0056863814592361395
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "where several white sailboats are moored to wooden docks",
+      "s_box": 0.2286686897277832,
+      "s_short": 0.18920716643333435,
+      "reward": 0.014658370614051813
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A large sailing yacht with a furled sail sits prominently on the left",
+      "s_box": 0.18449771404266357,
+      "s_short": 0.13758710026741028,
+      "reward": -0.029512605071067816
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "while a person stands on the lower pier capturing the scene with a camera",
+      "s_box": 0.2251143455505371,
+      "s_short": 0.1586209535598755,
+      "reward": 0.01110402643680572
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A wooden rowboat floats gently near the dock in the foreground",
+      "s_box": 0.2120741456747055,
+      "s_short": 0.13566865026950836,
+      "reward": -0.0019361734390258845
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2805587649345398,
+      "s_short": 0.2642991542816162,
+      "reward": 0.04399105906486511
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a sunny harbor scene is captured with multiple sailboats docked along the wooden piers",
+      "s_box": 0.22500887513160706,
+      "s_short": 0.1519296020269394,
+      "reward": -0.011558830738067627
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "A man with a backpack is seen taking a photograph from the pier on the right",
+      "s_box": 0.2588469088077545,
+      "s_short": 0.18129581212997437,
+      "reward": 0.022279202938079834
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "while another person relaxes on the deck of a boat in the center",
+      "s_box": 0.22580169141292572,
+      "s_short": 0.13719837367534637,
+      "reward": -0.010766014456748962
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A small green rowboat is tied to the dock near the bottom left corner",
+      "s_box": 0.19262228906154633,
+      "s_short": 0.15349319577217102,
+      "reward": -0.04394541680812836
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The scene shows a peaceful marina with bright blue water and white boats moored to wooden docks",
+      "s_box": 0.20401956140995026,
+      "s_short": 0.15765470266342163,
+      "reward": -0.014954522252082825
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "On the left",
+      "s_box": 0.2319372296333313,
+      "s_short": 0.2059847116470337,
+      "reward": 0.012963145971298218
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "a large yacht with blue fenders is docked",
+      "s_box": 0.20809786021709442,
+      "s_short": 0.1837274581193924,
+      "reward": -0.01087622344493866
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and on the right",
+      "s_box": 0.2329520732164383,
+      "s_short": 0.21485497057437897,
+      "reward": 0.013977989554405212
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "a man stands on the pier facing the water",
+      "s_box": 0.21773859858512878,
+      "s_short": 0.12731102108955383,
+      "reward": -0.0012354850769042969
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A white seagull is perched on the railing of the boat in the center",
+      "s_box": 0.17973770201206207,
+      "s_short": 0.11569252610206604,
+      "reward": -0.03923638164997101
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "looking towards the water",
+      "s_box": 0.25833556056022644,
+      "s_short": 0.2594359219074249,
+      "reward": 0.03936147689819336
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image displays a harbor area with several sailboats docked in clear blue water",
+      "s_box": 0.21832232177257538,
+      "s_short": 0.14022338390350342,
+      "reward": 0.0071760788559913635
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A large white boat dominates the left side",
+      "s_box": 0.1969444751739502,
+      "s_short": 0.16409586369991302,
+      "reward": -0.01420176774263382
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and a person is visible standing on the wooden pier on the right",
+      "s_box": 0.2264341413974762,
+      "s_short": 0.1415121704339981,
+      "reward": 0.015287898480892181
+    },
+    {
+      "gid": "sa_9998",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A small red kayak is floating in the water between the large yacht and the central dock",
+      "s_box": 0.2028840333223343,
+      "s_short": 0.121843121945858,
+      "reward": -0.008262209594249725
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a brightly lit clothing booth with two matching sets hanging on the wall",
+      "s_box": 0.21442846953868866,
+      "s_short": 0.1549379676580429,
+      "reward": 0.0033330053091049083
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "one in dusty pink and one in cream",
+      "s_box": 0.21530143916606903,
+      "s_short": 0.19857725501060486,
+      "reward": 0.004205974936485279
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A group of shoppers gathers around a table of folded garments",
+      "s_box": 0.19057060778141022,
+      "s_short": 0.1292417049407959,
+      "reward": -0.020524856448173534
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "while a large poster of a car and models is displayed on the right",
+      "s_box": 0.21446093916893005,
+      "s_short": 0.1630791574716568,
+      "reward": 0.0033654749393463024
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A wooden rocking horse is positioned on a shelf above the hanging clothes",
+      "s_box": 0.22071586549282074,
+      "s_short": 0.17549753189086914,
+      "reward": 0.009620401263236988
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2495385706424713,
+      "s_short": 0.24507862329483032,
+      "reward": 0.0205122729142507
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a retail display showcases a pink and a white outfit hanging against a white wall",
+      "s_box": 0.20536038279533386,
+      "s_short": 0.16182038187980652,
+      "reward": -0.02366591493288675
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "illuminated by small spotlights",
+      "s_box": 0.2251226007938385,
+      "s_short": 0.2179669290781021,
+      "reward": -0.0039036969343821115
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "Several people are browsing the merchandise",
+      "s_box": 0.22545012831687927,
+      "s_short": 0.2190181463956833,
+      "reward": -0.00357616941134134
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "including a woman in a white t-shirt with text on it",
+      "s_box": 0.23127731680870056,
+      "s_short": 0.18656526505947113,
+      "reward": 0.002251019080479949
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A small potted plant sits on the floor near the bottom of the display",
+      "s_box": 0.23740878701210022,
+      "s_short": 0.16700291633605957,
+      "reward": 0.008382489283879607
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a busy market stall with a pink and white matching set displayed on hangers above a table",
+      "s_box": 0.20148521661758423,
+      "s_short": 0.17210566997528076,
+      "reward": -0.01892427504062652
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A group of customers",
+      "s_box": 0.22316166758537292,
+      "s_short": 0.2044268697500229,
+      "reward": 0.002752175927162176
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "including one wearing a face mask",
+      "s_box": 0.2620343565940857,
+      "s_short": 0.23946692049503326,
+      "reward": 0.041624864935874945
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "are looking at items on the table",
+      "s_box": 0.2045617550611496,
+      "s_short": 0.17911481857299805,
+      "reward": -0.01584773659706115
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A silver cash register is visible on the right side of the counter",
+      "s_box": 0.21080446243286133,
+      "s_short": 0.1584179550409317,
+      "reward": -0.00960502922534942
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image depicts a fashion booth with a pink and white outfit hanging on the wall and a poster of models next to it",
+      "s_box": 0.24009087681770325,
+      "s_short": 0.1754463016986847,
+      "reward": 0.01827724277973175
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A crowd of people surrounds the table",
+      "s_box": 0.2120157778263092,
+      "s_short": 0.1770479381084442,
+      "reward": -0.009797856211662292
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "examining the clothing laid out",
+      "s_box": 0.2308330535888672,
+      "s_short": 0.20198388397693634,
+      "reward": 0.009019419550895691
+    },
+    {
+      "gid": "sa_1001",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A black leather handbag hangs from a hook on the left side of the booth",
+      "s_box": 0.20431482791900635,
+      "s_short": 0.16927313804626465,
+      "reward": -0.01749880611896515
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a crowded indoor event space with wooden tables and many people socializing",
+      "s_box": 0.2144801914691925,
+      "s_short": 0.1422722339630127,
+      "reward": 0.0037165284156799316
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "In the foreground",
+      "s_box": 0.24661073088645935,
+      "s_short": 0.22811244428157806,
+      "reward": 0.03584706783294678
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "two women are seated at a table with wine glasses and plates of food",
+      "s_box": 0.20005539059638977,
+      "s_short": 0.1486729085445404,
+      "reward": -0.010708272457122803
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A large flat-screen television is mounted on the wall behind them",
+      "s_box": 0.1776798963546753,
+      "s_short": 0.13474097847938538,
+      "reward": -0.03308376669883728
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "displaying a sports game",
+      "s_box": 0.21499210596084595,
+      "s_short": 0.1954546421766281,
+      "reward": 0.004228442907333374
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.26402685046195984,
+      "s_short": 0.24950923025608063,
+      "reward": 0.049854704737663263
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a bustling social gathering takes place inside a large hall with white walls and wooden tables",
+      "s_box": 0.17826923727989197,
+      "s_short": 0.1082497090101242,
+      "reward": -0.03590290844440461
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "Several guests are seated in the foreground",
+      "s_box": 0.21694156527519226,
+      "s_short": 0.17476704716682434,
+      "reward": 0.0027694195508956854
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "enjoying wine and sandwiches",
+      "s_box": 0.24455836415290833,
+      "s_short": 0.21253278851509094,
+      "reward": 0.03038621842861175
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A grand piano sits in the corner of the room near the standing crowd",
+      "s_box": 0.16706471145153046,
+      "s_short": 0.09972347319126129,
+      "reward": -0.04710743427276612
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a lively indoor reception with many attendees standing and seated at long tables",
+      "s_box": 0.1796618402004242,
+      "s_short": 0.14582014083862305,
+      "reward": -0.015816017985343933
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "Two women in the foreground are engaged in conversation while holding wine glasses",
+      "s_box": 0.20438215136528015,
+      "s_short": 0.1390337347984314,
+      "reward": 0.008904293179512024
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A large potted palm tree stands in the middle of the room",
+      "s_box": 0.18428567051887512,
+      "s_short": 0.11996742337942123,
+      "reward": -0.011192187666893005
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "separating the seated guests from the crowd",
+      "s_box": 0.21358177065849304,
+      "s_short": 0.20131653547286987,
+      "reward": 0.018103912472724915
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image captures a busy indoor event with wooden tables and a diverse crowd of people",
+      "s_box": 0.20722371339797974,
+      "s_short": 0.14289259910583496,
+      "reward": -0.003684934228658676
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "In the foreground",
+      "s_box": 0.24661071598529816,
+      "s_short": 0.22811245918273926,
+      "reward": 0.035702068358659744
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "guests are dining on sandwiches and wine near a table with bottles",
+      "s_box": 0.2047455906867981,
+      "s_short": 0.16210073232650757,
+      "reward": -0.006163056939840317
+    },
+    {
+      "gid": "sa_1002",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A waiter carrying a silver tray is walking through the center of the room",
+      "s_box": 0.18505457043647766,
+      "s_short": 0.14704912900924683,
+      "reward": -0.02585407719016075
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a runner standing on an asphalt road during a marathon event",
+      "s_box": 0.2658248841762543,
+      "s_short": 0.1750972718000412,
+      "reward": 0.03249393155177435
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "wearing a white shirt with a red cross and dark shorts",
+      "s_box": 0.2128421664237976,
+      "s_short": 0.18770207464694977,
+      "reward": -0.020488786200682313
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A white balloon with a green cross floats above her head",
+      "s_box": 0.22169744968414307,
+      "s_short": 0.15619944036006927,
+      "reward": -0.011633502940336854
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "while a stopwatch is strapped to her left wrist",
+      "s_box": 0.21664398908615112,
+      "s_short": 0.11666606366634369,
+      "reward": -0.016686963538328797
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "In the background",
+      "s_box": 0.267873615026474,
+      "s_short": 0.2534981966018677,
+      "reward": 0.03454266240199408
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "a large archway displays the word 'FINISH' as other participants run towards it",
+      "s_box": 0.2151036113500595,
+      "s_short": 0.12550224363803864,
+      "reward": -0.01822734127442041
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2695921063423157,
+      "s_short": 0.25846511125564575,
+      "reward": 0.05310727655887604
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a female runner is positioned in the center of a paved street",
+      "s_box": 0.21972724795341492,
+      "s_short": 0.15541046857833862,
+      "reward": 0.0032424181699752808
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "dressed in athletic gear including blue compression socks and a 'MEDICAL' bib",
+      "s_box": 0.21368524432182312,
+      "s_short": 0.14814303815364838,
+      "reward": -0.002799585461616516
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "She holds a white balloon with a green cross aloft on a string",
+      "s_box": 0.19012022018432617,
+      "s_short": 0.16242878139019012,
+      "reward": -0.026364609599113464
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "and a yellow tennis ball lies on the ground near her feet",
+      "s_box": 0.20603489875793457,
+      "s_short": 0.1284271776676178,
+      "reward": -0.010449931025505066
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "several runners in colorful shirts are approaching the finish line structure",
+      "s_box": 0.19974926114082336,
+      "s_short": 0.15188667178153992,
+      "reward": -0.016735568642616272
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a marathon scene with a central female runner wearing a white t-shirt and a cap",
+      "s_box": 0.21894970536231995,
+      "s_short": 0.19087696075439453,
+      "reward": -0.009491991996765148
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "standing on a grey road",
+      "s_box": 0.2470862865447998,
+      "s_short": 0.23630578815937042,
+      "reward": 0.01864458918571471
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "She is attached to a white balloon with a green cross",
+      "s_box": 0.22378015518188477,
+      "s_short": 0.17977865040302277,
+      "reward": -0.0046615421772003285
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "and a wooden bench is situated on the sidewalk to her right",
+      "s_box": 0.23084524273872375,
+      "s_short": 0.1398766040802002,
+      "reward": 0.0024035453796386608
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "Other runners are visible in the background passing under a large 'FINISH' banner",
+      "s_box": 0.22154709696769714,
+      "s_short": 0.14320582151412964,
+      "reward": -0.0068946003913879506
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image captures a runner in the foreground on a city street",
+      "s_box": 0.24100065231323242,
+      "s_short": 0.1802917867898941,
+      "reward": 0.009011837343374879
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "wearing a white shirt with a red cross and a 'MEDICAL' bib around her waist",
+      "s_box": 0.22921134531497955,
+      "s_short": 0.17772985994815826,
+      "reward": -0.00277746965487799
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A white balloon with a green cross floats above her",
+      "s_box": 0.22667068243026733,
+      "s_short": 0.16530245542526245,
+      "reward": -0.005318132539590209
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "and a blue bicycle is parked against the barrier on the left side of the road",
+      "s_box": 0.19205471873283386,
+      "s_short": 0.12364470958709717,
+      "reward": -0.03993409623702368
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "In the distance",
+      "s_box": 0.2839313745498657,
+      "s_short": 0.27509617805480957,
+      "reward": 0.05194255958000818
+    },
+    {
+      "gid": "sa_1004",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "a crowd of runners is moving toward the finish line arch",
+      "s_box": 0.2190641164779663,
+      "s_short": 0.1522710919380188,
+      "reward": -0.012924698491891234
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a man in athletic gear giving a thumbs up",
+      "s_box": 0.2535582184791565,
+      "s_short": 0.19186055660247803,
+      "reward": 0.0024268676837285175
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "wearing a blue shirt and a red bandana",
+      "s_box": 0.2426510453224182,
+      "s_short": 0.22358578443527222,
+      "reward": -0.008480305473009764
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "He has a race bib with the number 5039 on his chest",
+      "s_box": 0.23217204213142395,
+      "s_short": 0.16511644423007965,
+      "reward": -0.018959308664004026
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "and a wooden medal hangs around his neck",
+      "s_box": 0.27216556668281555,
+      "s_short": 0.19587703049182892,
+      "reward": 0.021034215887387575
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A black bicycle is parked directly beside him",
+      "s_box": 0.25320664048194885,
+      "s_short": 0.2005983591079712,
+      "reward": 0.002075289686520876
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "with its front wheel visible near his leg",
+      "s_box": 0.2530345916748047,
+      "s_short": 0.20458856225013733,
+      "reward": 0.0019032408793767108
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2926841378211975,
+      "s_short": 0.28811123967170715,
+      "reward": 0.03210426370302838
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a runner stands outdoors wearing a blue shirt and a hydration vest",
+      "s_box": 0.20773428678512573,
+      "s_short": 0.15882951021194458,
+      "reward": -0.0528455873330434
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "He has a red bandana on his head and a race bib numbered 5039",
+      "s_box": 0.29854846000671387,
+      "s_short": 0.22080948948860168,
+      "reward": 0.03796858588854474
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "and he is giving a thumbs up",
+      "s_box": 0.2679269313812256,
+      "s_short": 0.22038684785366058,
+      "reward": 0.007347057263056456
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "To his left",
+      "s_box": 0.25956737995147705,
+      "s_short": 0.2551742494106293,
+      "reward": -0.0010124941666920795
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "a small white dog is sitting on the grass near the other participants",
+      "s_box": 0.23701804876327515,
+      "s_short": 0.18777382373809814,
+      "reward": -0.023561825354893984
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a man in running attire with a red bandana and a hydration pack",
+      "s_box": 0.24685971438884735,
+      "s_short": 0.20442400872707367,
+      "reward": -0.00023722276091575623
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "giving a thumbs up",
+      "s_box": 0.27721619606018066,
+      "s_short": 0.2746589779853821,
+      "reward": 0.030119258910417557
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "He is wearing a bib with the number 5039 and has a wooden medal around his neck",
+      "s_box": 0.24559152126312256,
+      "s_short": 0.1715569794178009,
+      "reward": -0.0015054158866405487
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A large silver trophy sits on a table in the background behind the runners",
+      "s_box": 0.21872031688690186,
+      "s_short": 0.16766764223575592,
+      "reward": -0.028376620262861252
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image features a group of people at an outdoor event",
+      "s_box": 0.2648994028568268,
+      "s_short": 0.19933165609836578,
+      "reward": 0.013189315795898438
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "with a man in a blue shirt and red bandana in the foreground",
+      "s_box": 0.24468818306922913,
+      "s_short": 0.2067253589630127,
+      "reward": -0.007021903991699219
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "He is giving a thumbs up and wears a race bib with the number 5039",
+      "s_box": 0.2507970929145813,
+      "s_short": 0.19013045728206635,
+      "reward": -0.0009129941463470459
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "along with a wooden medal",
+      "s_box": 0.2843160033226013,
+      "s_short": 0.24220363795757294,
+      "reward": 0.032605916261672974
+    },
+    {
+      "gid": "sa_1007",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A yellow school bus is parked in the distance behind the trees",
+      "s_box": 0.2138497531414032,
+      "s_short": 0.1649358570575714,
+      "reward": -0.037860333919525146
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a bustling city skyline with several tall buildings and a large construction site in the foreground",
+      "s_box": 0.21294116973876953,
+      "s_short": 0.1320561021566391,
+      "reward": -0.017037647465864808
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A red construction crane stands prominently on the left",
+      "s_box": 0.20519360899925232,
+      "s_short": 0.1608937382698059,
+      "reward": -0.02478520820538202
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "towering over the excavation area where workers are busy",
+      "s_box": 0.2534960210323334,
+      "s_short": 0.2294466495513916,
+      "reward": 0.023517203827699035
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "In the distance",
+      "s_box": 0.26334691047668457,
+      "s_short": 0.25893139839172363,
+      "reward": 0.03336809327205023
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "a river winds through the city",
+      "s_box": 0.24135954678058624,
+      "s_short": 0.1899939775466919,
+      "reward": 0.011380729575951903
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "and a large cargo ship is docked along the bank near the skyscrapers",
+      "s_box": 0.20353564620018005,
+      "s_short": 0.16040101647377014,
+      "reward": -0.026443171004454286
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2786363363265991,
+      "s_short": 0.26872193813323975,
+      "reward": 0.047546799693788805
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a dense urban landscape is visible under a clear blue sky",
+      "s_box": 0.2243904173374176,
+      "s_short": 0.13970205187797546,
+      "reward": -0.006699119295392714
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "dominated by glass-fronted skyscrapers",
+      "s_box": 0.2084362506866455,
+      "s_short": 0.17582881450653076,
+      "reward": -0.02265328594616481
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "A tall red crane rises above a deep construction pit filled with concrete pillars and building materials",
+      "s_box": 0.2350470870733261,
+      "s_short": 0.16603481769561768,
+      "reward": 0.003957550440515795
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "To the right",
+      "s_box": 0.2344537079334259,
+      "s_short": 0.2191677987575531,
+      "reward": 0.003364171300615587
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a modern building with blue reflective windows stands tall",
+      "s_box": 0.21955716609954834,
+      "s_short": 0.17541423439979553,
+      "reward": -0.011532370533261976
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "while a yellow school bus is parked on the street below",
+      "s_box": 0.21710579097270966,
+      "s_short": 0.14307084679603577,
+      "reward": -0.01398374566010066
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a high-angle view of a city undergoing development",
+      "s_box": 0.2122255563735962,
+      "s_short": 0.1611221432685852,
+      "reward": -0.0072057644526163644
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "with a large construction site surrounded by high-rise buildings",
+      "s_box": 0.22574853897094727,
+      "s_short": 0.16851261258125305,
+      "reward": 0.00631721814473471
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A red crane is positioned on the left side of the pit",
+      "s_box": 0.22277341783046722,
+      "s_short": 0.13897183537483215,
+      "reward": 0.0033420970042546683
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and various construction vehicles are scattered around the site",
+      "s_box": 0.2270573377609253,
+      "s_short": 0.1918535977602005,
+      "reward": 0.007626016934712737
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A river is visible in the background",
+      "s_box": 0.22407710552215576,
+      "s_short": 0.13246256113052368,
+      "reward": 0.004645784695943206
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "and a hot air balloon floats above the distant horizon",
+      "s_box": 0.20470596849918365,
+      "s_short": 0.16116125881671906,
+      "reward": -0.014725352327028901
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This scene captures a vibrant city center with a mix of completed skyscrapers and active construction zones",
+      "s_box": 0.2200569063425064,
+      "s_short": 0.174458310008049,
+      "reward": -0.012848084171613067
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A prominent red crane is anchored near the center",
+      "s_box": 0.22385919094085693,
+      "s_short": 0.17828203737735748,
+      "reward": -0.009045799573262542
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "overlooking a deep excavation site with exposed foundations",
+      "s_box": 0.2551863193511963,
+      "s_short": 0.2281349003314972,
+      "reward": 0.022281328837076814
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "In the background",
+      "s_box": 0.2638345956802368,
+      "s_short": 0.25195440649986267,
+      "reward": 0.03092960516611734
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "a river flows past the buildings",
+      "s_box": 0.23815399408340454,
+      "s_short": 0.15454551577568054,
+      "reward": 0.005249003569285066
+    },
+    {
+      "gid": "sa_1008",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "and a white sailboat is cruising along the water near the shore",
+      "s_box": 0.1963389366865158,
+      "s_short": 0.14537392556667328,
+      "reward": -0.03656605382760367
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a young boy standing against a plain white background",
+      "s_box": 0.20371517539024353,
+      "s_short": 0.12173042446374893,
+      "reward": 0.005527112632989883
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "wearing a blue and white plaid button-down shirt",
+      "s_box": 0.18866901099681854,
+      "s_short": 0.16135664284229279,
+      "reward": -0.009519051760435104
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "He is holding a silver smartphone in both hands and looking down at the screen",
+      "s_box": 0.20606786012649536,
+      "s_short": 0.1360705941915512,
+      "reward": 0.007879797369241714
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A black backpack is resting on the floor near his feet",
+      "s_box": 0.19430020451545715,
+      "s_short": 0.13621720671653748,
+      "reward": -0.0038878582417964935
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2519245147705078,
+      "s_short": 0.237186998128891,
+      "reward": 0.049050115048885345
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a boy in a checkered shirt is seen from the chest up against a bright",
+      "s_box": 0.1817099153995514,
+      "s_short": 0.11594034731388092,
+      "reward": -0.021164484322071075
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "He is focused on a smartphone held in his hands",
+      "s_box": 0.18974825739860535,
+      "s_short": 0.10203777253627777,
+      "reward": -0.01312614232301712
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A pair of white headphones is draped around his neck",
+      "s_box": 0.18811491131782532,
+      "s_short": 0.13589709997177124,
+      "reward": -0.01475948840379715
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a young boy with short hair wearing a blue plaid shirt",
+      "s_box": 0.19122633337974548,
+      "s_short": 0.146439790725708,
+      "reward": -0.008138254284858704
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "standing in front of a white backdrop",
+      "s_box": 0.21698078513145447,
+      "s_short": 0.16041013598442078,
+      "reward": 0.01761619746685028
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "He is holding a mobile phone and appears to be texting",
+      "s_box": 0.21785816550254822,
+      "s_short": 0.13985908031463623,
+      "reward": 0.01849357783794403
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A wooden desk is visible in the lower right corner of the frame",
+      "s_box": 0.17139306664466858,
+      "s_short": 0.11548301577568054,
+      "reward": -0.027971521019935608
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image depicts a boy in a blue and white checkered shirt holding a smartphone against a plain white background",
+      "s_box": 0.19957083463668823,
+      "s_short": 0.14946593344211578,
+      "reward": 0.00021395087242126465
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "He is looking down at the device with both hands gripping it",
+      "s_box": 0.2100590169429779,
+      "s_short": 0.15386420488357544,
+      "reward": 0.010702133178710938
+    },
+    {
+      "gid": "sa_1009",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A wristwatch is visible on his left wrist",
+      "s_box": 0.18844079971313477,
+      "s_short": 0.13255244493484497,
+      "reward": -0.010916084051132202
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a bright",
+      "s_box": 0.2273900806903839,
+      "s_short": 0.15539121627807617,
+      "reward": 0.028292514383792877
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "clear day at a suburban shopping center with a long strip of stores and a large parking lot",
+      "s_box": 0.21265435218811035,
+      "s_short": 0.15371380746364594,
+      "reward": 0.013556785881519318
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "A black sedan is parked on the left side of the frame",
+      "s_box": 0.1689455360174179,
+      "s_short": 0.0994158536195755,
+      "reward": -0.030152030289173126
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "while a red car sits further back near the grass",
+      "s_box": 0.1820179522037506,
+      "s_short": 0.11812516301870346,
+      "reward": -0.017079614102840424
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A person on a bicycle is riding across the crosswalk in the middle of the scene",
+      "s_box": 0.18356338143348694,
+      "s_short": 0.15071168541908264,
+      "reward": -0.015534184873104095
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "and a few other cars are driving or parked in the lot",
+      "s_box": 0.22001409530639648,
+      "s_short": 0.143572136759758,
+      "reward": 0.02091652899980545
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.24623119831085205,
+      "s_short": 0.2320823073387146,
+      "reward": 0.053038584689299256
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a sprawling retail plaza with various storefronts is visible under a cloudless blue sky",
+      "s_box": 0.1812208741903305,
+      "s_short": 0.12353242933750153,
+      "reward": -0.011971739431222289
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "A black car is parked on the left side of the road",
+      "s_box": 0.1858832836151123,
+      "s_short": 0.11055538058280945,
+      "reward": -0.00730933000644049
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "and a white SUV is driving near the center",
+      "s_box": 0.19680196046829224,
+      "s_short": 0.14636185765266418,
+      "reward": 0.003609346846739442
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A yellow school bus is parked in the lot on the right side of the image",
+      "s_box": 0.15423104166984558,
+      "s_short": 0.09132292121648788,
+      "reward": -0.03896157195170721
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "and a tall street light stands in the foreground",
+      "s_box": 0.19478732347488403,
+      "s_short": 0.12796735763549805,
+      "reward": 0.0015947098533312387
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The image shows a commercial shopping area with a large parking lot and multiple store signs",
+      "s_box": 0.18592391908168793,
+      "s_short": 0.12698109447956085,
+      "reward": -0.008168527483940119
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "including a Dollarama",
+      "s_box": 0.21392574906349182,
+      "s_short": 0.21077430248260498,
+      "reward": 0.019833302497863775
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "A black car is parked on the left",
+      "s_box": 0.19057577848434448,
+      "s_short": 0.13647368550300598,
+      "reward": -0.003516668081283564
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and a white SUV is driving down the center road",
+      "s_box": 0.19770313799381256,
+      "s_short": 0.14557603001594543,
+      "reward": 0.003610691428184515
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A wooden picnic table is set up on the grassy island near the street light in the foreground",
+      "s_box": 0.18233364820480347,
+      "s_short": 0.10578656941652298,
+      "reward": -0.01175879836082458
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image captures a sunny day at a strip mall with a clear blue sky and several cars parked in the lot",
+      "s_box": 0.19099211692810059,
+      "s_short": 0.1314225196838379,
+      "reward": 0.005816113203763962
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "A black sedan is parked on the left side",
+      "s_box": 0.17990241944789886,
+      "s_short": 0.11148018389940262,
+      "reward": -0.005273584276437759
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "and a white SUV is driving near the center of the frame",
+      "s_box": 0.18899184465408325,
+      "s_short": 0.12790578603744507,
+      "reward": 0.003815840929746628
+    },
+    {
+      "gid": "sa_1013",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A large fountain is spraying water in the grassy area near the street light on the left side of the parking lot",
+      "s_box": 0.1808176338672638,
+      "s_short": 0.1025797501206398,
+      "reward": -0.00435836985707283
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "The image features a grassy canal-side setting with a lock mechanism and a blue sign reading 'Dixon's Lock'",
+      "s_box": 0.19658228754997253,
+      "s_short": 0.12112398445606232,
+      "reward": -0.0050658086935679025
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 0,
+      "is_hall": true,
+      "clause": "A white swan is floating gently on the water near the lock gates",
+      "s_box": 0.2064967304468155,
+      "s_short": 0.13481256365776062,
+      "reward": 0.004848634203275054
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 0,
+      "is_hall": false,
+      "clause": "and a brick bridge arches over the canal in the background",
+      "s_box": 0.2018652707338333,
+      "s_short": 0.14238832890987396,
+      "reward": 0.00021717449029287628
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "In this image",
+      "s_box": 0.2777029871940613,
+      "s_short": 0.25897809863090515,
+      "reward": 0.07283685728907585
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "a green field leads up to a canal lock with black and white balance beams and a red warning sign",
+      "s_box": 0.1458999514579773,
+      "s_short": 0.11403627693653107,
+      "reward": -0.05896617844700813
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 1,
+      "is_hall": true,
+      "clause": "A wooden bench sits on the grass beside the towpath",
+      "s_box": 0.17262357473373413,
+      "s_short": 0.103456050157547,
+      "reward": -0.0322425551712513
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 1,
+      "is_hall": false,
+      "clause": "while trees and distant houses fill the background",
+      "s_box": 0.223238006234169,
+      "s_short": 0.16221356391906738,
+      "reward": 0.01837187632918358
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "The scene shows a lock on a canal surrounded by lush green grass and trees",
+      "s_box": 0.1971844732761383,
+      "s_short": 0.1396285593509674,
+      "reward": -0.00613414744536081
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 2,
+      "is_hall": true,
+      "clause": "A narrowboat is moored along the canal bank near the lock gates",
+      "s_box": 0.19638743996620178,
+      "s_short": 0.1370401233434677,
+      "reward": -0.006931180755297334
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 2,
+      "is_hall": false,
+      "clause": "and a blue information sign stands to the right on the grass",
+      "s_box": 0.2163839489221573,
+      "s_short": 0.14835955202579498,
+      "reward": 0.013065328200658172
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "This image depicts a rural canal lock with a red 'Danger' sign and white railings along the water's edge",
+      "s_box": 0.2240619659423828,
+      "s_short": 0.14696446061134338,
+      "reward": 0.021240711212158203
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 3,
+      "is_hall": true,
+      "clause": "A fisherman sits on the grassy bank with a fishing rod",
+      "s_box": 0.18316245079040527,
+      "s_short": 0.12288419157266617,
+      "reward": -0.019658803939819336
+    },
+    {
+      "gid": "sa_1016",
+      "cap_idx": 3,
+      "is_hall": false,
+      "clause": "while a blue sign and distant buildings are visible in the background",
+      "s_box": 0.20123934745788574,
+      "s_short": 0.14655537903308868,
+      "reward": -0.0015819072723388672
+    }
+  ]
+}
