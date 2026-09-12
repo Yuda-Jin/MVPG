@@ -9,9 +9,13 @@ MVPG RL 训练（自研，不依赖 verl）。
         另加对原模型（训练前 mm_projector）的 KL 正则（仅主图行），防止策略
         偏离语言分布坠入「堆词/重复句式」低质量吸引子。
   §3.2  区域对比接地奖励 RCGR：
-        r_i = alpha * [sim(a_i, R_i) - max_{j!=i} sim(c_j, R_i)]
-            + beta  * [sim(a_i, R_i) - sim(b, R_i)]
+        r_i = alpha * [sim(a_i, R_i) - max_{j!=i} sim(c_j, R_i)]      # 区域竞争
+            + beta  * [sim(a_i, R_i) - sim(b, R_i)]                    # 缺席负样本(易)
+            + gamma * [sim(a_i, R_i) - sim(ref_i, R_i)]               # 原模型 caption(难)
         sim = FG-CLIP 文本/区域特征余弦相似度。
+        ref 为「与当前训练策略同基座」的原模型（7B 训 7B、13B 训 13B）对各区域
+        （含主图）预生成的 caption，区域级对齐；作为难负样本，要求策略 caption 比原
+        模型 caption 更贴合图像（self-play / relative reward）。
 
 数据格式（image-dir 下每个子目录 = 一张主图的一组网格子图视角）：
     image-dir/
@@ -57,6 +61,22 @@ FGCLIP_ROOT = str(ROOT / "models" / "fgclip2-base-patch16")
 # 生成 prompt（对每个子图视角提问；子图是网格 crop，非 mask 高亮图）
 DEFAULT_QUESTION = "Describe the image content in detail."
 
+# 原模型 caption 难负样本在 model_captions.json 里的 key（与 data/generate_model_captions.py
+# 的 --models 默认一致）。每个区域（含主图）各有一条 7B/13B caption，区域级对齐。
+REF7_KEY = "llava-v1.5-7b"
+REF13_KEY = "llava-v1.5-13b"
+
+
+def _ref_key_from_model_name(model_name):
+    """由当前训练策略的模型名/路径推断应使用哪个原模型 caption 作为难负样本。
+
+    策略是 7B → 用原 7B caption；策略是 13B → 用原 13B caption（同基座自对弈，
+    避免跨模型风格差异污染 reward）。无法判断（路径不含 13b）时回退到 7B。
+    """
+    if "13b" in os.path.basename(str(model_name)).lower():
+        return REF13_KEY
+    return REF7_KEY
+
 
 # =============================================================================
 # FG-CLIP2：图像/文本编码（用于奖励）
@@ -89,7 +109,7 @@ def _select_neg_sim(neg_feats, img_feat, neg_mode):
 
 def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
                           alpha=1.0, beta=0.5, neg_mode="first",
-                          reg_weight=0.0):
+                          reg_weight=0.0, ref_captions=None, ref_weights=None):
     """组级 RCGR 奖励。region_paths/captions 一一对应（同图 K 个子图视角）。
     返回 (list[float], float)：奖励列表（长度 K）与区域结构正则均值
     （reg_weight<=0 时为 nan，仅关闭时）。
@@ -98,6 +118,10 @@ def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
     - max_{j!=i} sim(c_j, R_i)：同图其余区域描述的竞争项
     - sim(b, R_i)：缺席难负例基线（b 来自组级 neg_captions 池；
       neg_mode="first" 固定取池首条；neg_mode="worst" 逐区域取最难一条）
+    - ref_captions：长度 K 的列表，每元素 {model_name: caption}（原模型对第 i 个区域
+      预生成的 caption，区域级对齐、含主图行）。ref_weights：{model_name: w}，w<=0 的
+      模型跳过。对应难负样本项 w*(sim(a_i,R_i) - sim(ref_i,R_i))，要求策略 caption
+      比原模型 caption 更贴合图像（self-play / relative reward）。
     - reg_weight>0：区域结构对齐正则（reward shaping）。caption 由离散采样得到，
       FG-CLIP 文本编码在 no_grad 下不可微，无法作为直接 loss 反传到投影层，
       故并入奖励经 advantage 产生梯度：
@@ -109,11 +133,31 @@ def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
     """
     K = len(region_paths)
     img_feats = fg.encode_image_paths(region_paths)                # (K, D)
+
+    # 原模型 ref caption：逐行展开成 (文本, (行号, 模型名))，仅保留权重>0且有文本的
+    ref_txt, ref_idx = [], []
+    ref_weights = ref_weights or {}
+    if ref_captions:
+        for i, d in enumerate(ref_captions):
+            if not d:
+                continue
+            for mname, w in ref_weights.items():
+                c = d.get(mname)
+                if w > 0 and c:
+                    ref_txt.append(c)
+                    ref_idx.append((i, mname))
+
     neg_captions = list(neg_captions or [])
-    all_txt = list(captions) + neg_captions
-    feats = fg.encode_texts(all_txt)                               # (K+N, D)
+    all_txt = list(captions) + neg_captions + ref_txt
+    feats = fg.encode_texts(all_txt)                               # (K+N+R, D)
     txt_feats = feats[:K]
-    neg_feats = feats[K:] if neg_captions else []
+    neg_feats = feats[K:K + len(neg_captions)] if neg_captions else []
+    ref_feats = feats[K + len(neg_captions):]
+
+    # sim_ref[i][model_name] = cos(ref_caption, region_i)
+    sim_ref = {}
+    for f, (i, mname) in zip(ref_feats, ref_idx):
+        sim_ref.setdefault(i, {})[mname] = _cos(f, img_feats[i])
 
     reg_rows = None
     if reg_weight > 0 and K > 1:
@@ -135,6 +179,13 @@ def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
         sim_neg = _select_neg_sim(neg_feats, img_feats[i], neg_mode) if len(neg_feats) > 0 else 0.0
 
         r = alpha * (sim_self - sim_others) + beta * (sim_self - sim_neg)
+
+        # 原模型 caption 难负样本：逐区域 sim_ref_i，要求策略 caption 超过原模型
+        for mname, w in ref_weights.items():
+            s = (sim_ref.get(i) or {}).get(mname)
+            if w > 0 and s is not None:
+                r = r + w * (sim_self - s)
+
         if reg_rows is not None:
             r = r - reg_weight * reg_rows[i].item()
         rewards.append(r)
@@ -259,6 +310,40 @@ def _read_root_neg_pool(image_dir):
     return None
 
 
+def _read_model_captions(image_dir, ref_json="model_captions.json"):
+    """读取 image-dir 根级 model_captions.json（原模型逐区域 caption）。
+    结构 {gid: {model_name: {image_stem: caption}}}。找不到返回 None。"""
+    fp = Path(image_dir) / ref_json
+    if not fp.is_file():
+        return None
+    try:
+        raw = json.loads(fp.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    return {str(gid): models for gid, models in raw.items() if isinstance(models, dict)}
+
+
+def _ref_captions_for_paths(model_captions, gid, paths, model_keys):
+    """按 paths 顺序，取每个区域（含主图）的原模型 caption dict {model_name: caption}。
+
+    paths 与 compute_group_rewards 的 region_paths 严格同序；主图行的 stem == gid，
+    子图行的 stem == gid_r{r}c{c}，直接按 Path(p).stem 从 model_captions[gid] 查询。
+    """
+    g_refs = model_captions.get(gid, {}) or {}
+    out = []
+    for p in paths:
+        stem = Path(p).stem
+        d = {}
+        for mname in model_keys:
+            c = (g_refs.get(mname) or {}).get(stem)
+            if c:
+                d[mname] = c
+        out.append(d)
+    return out
+
+
 _group_resolve_cache = {}
 
 
@@ -348,6 +433,7 @@ def compute_logprobs(logits, labels, ignore_index):
 
 def train(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    ref_key = _ref_key_from_model_name(args.model_name)
     print("=" * 78)
     print("MVPG RL 训练（自研 REINFORCE + 组均值基线，只训投影层）")
     print(f"  model  : {args.model_name}")
@@ -357,6 +443,8 @@ def train(args):
           f"use_main_image={args.use_main_image}")
     print(f"  batch  : groups_per_step={args.groups_per_step} reg_weight={args.reg_weight} "
           f"kl_weight={args.kl_weight}")
+    print(f"  ref    : ref_key={ref_key}(auto，同基座) ref7_weight={args.ref7_weight} "
+          f"ref13_weight={args.ref13_weight}")
     print("=" * 78)
 
     groups = load_groups(args.image_dir)
@@ -365,6 +453,20 @@ def train(args):
         raise SystemExit("没有找到有效数据组，请检查 image-dir 结构或根级 json。")
     for g in groups[:3]:
         print(f"  gid={g['gid']} negs={len(g['negs'])}")
+
+    # 原模型 caption 难负样本（区域级）：只取与当前训练策略同基座的原模型 caption
+    # （7B 训 7B、13B 训 13B），避免跨模型风格差异污染 reward。权重<=0 时关闭。
+    model_captions = _read_model_captions(args.image_dir, args.ref_json) or {}
+    ref_weight = args.ref7_weight if ref_key == REF7_KEY else args.ref13_weight
+    ref_weights = {ref_key: ref_weight} if ref_weight > 0 else {}
+    if ref_weights:
+        n_ref_groups = sum(
+            1 for g in model_captions
+            if any((model_captions[g].get(k) or {}) for k in ref_weights))
+        print(f"原模型难负样本: ref_key={ref_key} 权重={ref_weights}，"
+              f"含 caption 的组数={n_ref_groups}/{len(groups)}")
+    else:
+        print(f"原模型难负样本: 关闭（ref_key={ref_key} 对应 weight<=0）")
 
     model, tokenizer, image_processor, dtype = load_model_and_tokenizer(
         args.model_name, args.bits, args.fp16, args.bf16, device
@@ -438,10 +540,14 @@ def train(args):
                 region_paths.insert(0, main_img)
             metric_main_path = main_img if (not args.use_main_image and main_img) else None
             gen_paths = region_paths + ([metric_main_path] if metric_main_path else [])
+            reward_paths = region_paths + ([metric_main_path] if metric_main_path else [])
+            ref_captions = _ref_captions_for_paths(
+                model_captions, g["gid"], reward_paths, ref_weights.keys())
             metas.append({
                 "gid": g["gid"], "main_img": main_img,
                 "region_paths": region_paths, "neg_pool": g["negs"],
                 "metric_main_path": metric_main_path,
+                "reward_paths": reward_paths, "ref_captions": ref_captions,
                 # K = 参与训练的行数（含主图行），与 gen_paths/reward 计算的行序严格对齐
                 "row0": row0, "n_rows": len(gen_paths), "K": len(gen_paths),
             })
@@ -473,8 +579,7 @@ def train(args):
             resp = responses_all[m["row0"]: m["row0"] + m["n_rows"]]
             # 参与奖励/advantage/梯度的是全部行（含主图行）；路径顺序与 gen_paths 一致：
             # use_main_image=True 时主图在 region_paths[0]，否则主图行在末尾。
-            reward_paths = m["region_paths"] + (
-                [m["metric_main_path"]] if m["metric_main_path"] else [])
+            reward_paths = m["reward_paths"]
             if m["metric_main_path"] is not None:
                 cap_main = caps[-1]
             else:
@@ -482,7 +587,8 @@ def train(args):
             rewards, reg_mean = compute_group_rewards(
                 fg, reward_paths, caps, m["neg_pool"], device,
                 alpha=args.alpha, beta=args.beta,
-                neg_mode=args.neg_mode, reg_weight=args.reg_weight)
+                neg_mode=args.neg_mode, reg_weight=args.reg_weight,
+                ref_captions=m["ref_captions"], ref_weights=ref_weights)
             r = torch.tensor(rewards, device=device, dtype=torch.float32)
             # 组内归一化（GRPO 风格）：mean=0、单位方差，消除组间量纲差异，
             # 使每步梯度尺度一致；std→0（组内无差异）时 advantage→0，自然跳过更新。
@@ -491,7 +597,6 @@ def train(args):
             m.update(resp=resp, r=r, reg_mean=reg_mean,
                      adv=((r - r.mean()) / (r.std() + 1e-6)).clamp(-5.0, 5.0))
             m["caps"] = caps
-            m["reward_paths"] = reward_paths
             # 主图进度指标：把主图当作组内一个视角，直接取其竞争奖励值（与 r_min/r_max
             # 同口径，含跨区域竞争项，落在同一尺度区间内，可直接比较）。
             if cap_main is not None and m["main_img"]:
@@ -661,7 +766,16 @@ def main():
                         "前向反向按组累积梯度，显存占用与 G=1 相同）")
     p.add_argument("--lr", type=float, default=3e-4, help="投影层学习率")
     p.add_argument("--alpha", type=float, default=1.0, help="RCGR 跨区域竞争项系数")
-    p.add_argument("--beta", type=float, default=0.5, help="RCGR 负样本基线项系数")
+    p.add_argument("--beta", type=float, default=0.5,
+                   help="RCGR 幻觉负样本基线项系数（整图级 neg_captions；设为 0 取消 β 项，消融）")
+    p.add_argument("--ref7-weight", type=float, default=0.5,
+                   help="原模型(7B) caption 难负样本竞争项系数 gamma（区域级；"
+                        "仅当训练策略为 7B 时生效，<=0 关闭）")
+    p.add_argument("--ref13-weight", type=float, default=0.5,
+                   help="原模型(13B) caption 难负样本竞争项系数 gamma（区域级；"
+                        "仅当训练策略为 13B 时生效，<=0 关闭）")
+    p.add_argument("--ref-json", default="model_captions.json",
+                   help="根级原模型 caption json（由 data/generate_model_captions.py 生成）")
     p.add_argument("--kl-weight", type=float, default=0.1,
                    help="对原模型（训练前 mm_projector）的 KL 正则权重，仅主图行；<=0 关闭。"
                         "过大(>=1)会压死策略、奖励长期不涨，建议 0.05~0.2")
@@ -672,7 +786,7 @@ def main():
     p.add_argument("--use-main-image", action="store_true",
                    help="把整图（下采样主图）并入组内作为额外视角参与 reward/优化")
     p.add_argument("--temperature", type=float, default=1.0)
-    p.add_argument("--max-new-tokens", type=int, default=64)
+    p.add_argument("--max-new-tokens", type=int, default=128)
     p.add_argument("--max-grad-norm", type=float, default=1.0)
     p.add_argument("--bits", type=int, default=16, choices=[4, 8, 16], help="量化位数（8GB 显存建议 4）")
     p.add_argument("--fp16", action="store_true", help="使用 fp16")

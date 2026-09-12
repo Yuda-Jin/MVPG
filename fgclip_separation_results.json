@@ -1,0 +1,549 @@
+{
+  "summary": {
+    "n_groups": 12,
+    "mean_easy": 0.14779841364361346,
+    "min_easy": 0.05680342763662338,
+    "max_easy": 0.2213210165500641,
+    "mean_s7": 0.15197172947227955,
+    "mean_s13": 0.1493858421842257,
+    "mean_margin": -0.04865181756516298,
+    "min_margin": -0.0967322438955307,
+    "n_margin_gt0": 1,
+    "n_margin_le0": 11,
+    "sub_n": 48,
+    "sub_mean_s7": 0.1364340215610961,
+    "sub_mean_s13": 0.1301652491092682
+  },
+  "rows": [
+    {
+      "gid": "sa_1000",
+      "easy_sims": [
+        0.18598386645317078,
+        0.1980721354484558,
+        0.16916494071483612,
+        0.1676710695028305
+      ],
+      "s7": 0.17154330015182495,
+      "s13": 0.14755570888519287,
+      "margin": -0.05051642656326294,
+      "h7": "The image displays a beautiful wall painting featuring two characters, a couple with blurry heads. The people in the painting are facing each other and seemingly greeting or bidding farewell. Both of the main figures are wearing crowns.\n\nThere is a chair that is visible in the scene, situated near the left-center, but it doesn't seem to be an essential part of the painting. The overall scene presents a interesting moment captured in time, through the art on the wall.",
+      "h13": "The image portrays a beautifully painted fresco of two people, likely a man and a woman, having an intimate moment next to each other in an artistic manner. The fresco is a classic size and features vibrant colors which enhance its visual appeal.\n\nSeveral colorful fish and birds can be seen surrounding the main subject, further enhancing the lively mood and artistic composition of the scene. The entire fresco appears faded, which adds a sense of history and character to the image.",
+      "easies": [
+        "The image features an ancient wall painting depicting two figures standing close together against a weathered orange and beige background. The figure on the left is a shirtless man with elaborate tattoos and a dark headdress, while the figure on the right wears a green jacket over a striped skirt. A small brown dog rests at their feet near the bottom of the mural.",
+        "In this image, a traditional mural shows a man and a woman in ornate clothing painted on a rough plaster wall. The man is leaning in to whisper to the woman, who has her hair tied up in a bun and wears a patterned lower garment. A woven basket filled with fruit sits on the ground between the two figures.",
+        "The image displays a faded mural on a textured wall, featuring a tattooed man in a headdress conversing with a woman in a green jacket. The woman's face is obscured, and she wears a long skirt with horizontal stripes of orange, white, and blue. A brass oil lamp hangs from the ceiling above the couple.",
+        "This image shows a piece of ancient wall art with two human figures painted in a traditional style. On the left, a bare-chested man with red tattoo patterns leans toward a woman wearing a dark green top and a striped skirt. A wooden ladder leans against the wall in the background behind the woman."
+      ]
+    },
+    {
+      "gid": "sa_183",
+      "easy_sims": [
+        0.21239937841892242,
+        0.09219174832105637,
+        0.11494342237710953,
+        0.11446241289377213
+      ],
+      "s7": 0.14356563985347748,
+      "s13": 0.1619044989347458,
+      "margin": -0.06883373856544495,
+      "h7": "The image features a silver car racing down a paved road between the track's edge. The car is cruising around a curve, accelerating down the track, giving the appearance of an enthusiastic race. Since the car appears to be new, it might be participating in a race event or a timed speed test. \n\nOn the track next to the car, there are some green grassy areas. There are two more cars visible in the background, likely competing or watching the racing unfold.",
+      "h13": "The image portrays a black and white racetrack with an orange and blue Honda Civic driving around a curve near the center of the scene. The racing car appears to be skillfully navigating the turn, as shadows from the grass on the ground ride alongside it.\n\nThere are also two visible flags on the racetrack, likely marking specific areas or sections of the track. Overall, the scene captures the thrilling and challenging nature of high-speed racing on a closed circuit.",
+      "easies": [
+        "The image features a white Honda race car driving on an asphalt track, with a grassy verge visible along the right side. The car has an orange and blue livery with the number 16 on the windshield, and a checkered flag waves from a pole near the track edge.",
+        "In this image, a white racing car with orange and blue accents is moving along a paved track beside a strip of green grass. A black and white checkered flag is being waved in the background, and the driver is visible through the windshield.",
+        "The image shows a white Honda race car with the number 16 on its windshield driving on an asphalt surface. A checkered flag hangs from a nearby pole, and a grassy area borders the right side of the track.",
+        "This scene captures a white race car with orange and blue graphics speeding along an asphalt track. A checkered flag is visible in the distance, and the car's number 16 is clearly displayed on the windshield."
+      ]
+    },
+    {
+      "gid": "sa_2646",
+      "easy_sims": [
+        0.0853511169552803,
+        0.15573106706142426,
+        0.07791683077812195,
+        0.05680342763662338
+      ],
+      "s7": 0.19017986953258514,
+      "s13": 0.1599225103855133,
+      "margin": 0.00419144332408905,
+      "h7": "The scene depicts four women wearing different outfits walking across a brick promenade together. They appear to be enjoying their time strolling down the walkway. Among them, one woman can be seen wearing a colorful sleeveless shirt. Each of the women is carrying unique items, such as handbags, which are visible in various locations among their outfits.\n\nSome of the women are seen closer to the camera, while the others are within the foreground or in the background. The area is surrounded by an urban landscape, featuring benches situated on the promenade",
+      "h13": "In this long, blurry image, a group of four young Asian ladies are standing on a closer road. They seem to be enjoying their time together outdoors. The women are all wearing colorful clothing, suggesting a fun and lively atmosphere in the park they are in.\n\nThere are several handbags in the scene, with some placed near the women and others scattered around. One woman is also holding an umbrella, which might indicate that they are prepared for changing weather conditions.\n\nThe background features a white building with multiple windows behind the group of women. The image has a cheer",
+      "easies": [
+        "The image features a group of five women walking across a paved plaza in front of a white building with classical columns. A large brown dog is walking alongside the women on the stone path, and lush green trees provide shade in the background.",
+        "In this image, several women are strolling outdoors on a sunny day near a building with tall pillars. One woman in an orange shirt and green pants is reaching out her hand, while a red bicycle is parked against the tree behind her.",
+        "The scene shows a group of women walking in a line across a stone courtyard in front of an elegant building. A child in a blue jacket is running ahead of the group, and green foliage surrounds the area.",
+        "This image captures a group of five women walking together on a paved surface near a white building with columns. A wooden park bench is visible on the grass to the right, and the women are dressed in colorful casual clothing."
+      ]
+    },
+    {
+      "gid": "sa_3439",
+      "easy_sims": [
+        0.2213210165500641,
+        0.17335821688175201,
+        0.08894303441047668,
+        0.1741132289171219
+      ],
+      "s7": 0.14956405758857727,
+      "s13": 0.18224376440048218,
+      "margin": -0.07175695896148682,
+      "h7": "The scene occupies a street setting with a diverse group of people gathered around. A man is riding a motorcycle, which is surrounded by various individuals who are interacting nearby. Among them, some people can be seen holding different items like bags, ties, and a handwritten newspaper.\n\nThere's also a truck present in the background, suggesting the location is a city or urban setting. Pedestrians and cyclists can be seen in the scene, further contributing to the bustling atmosphere.\n\nIn addition to the action on the street, there are umbrellas visible,",
+      "h13": "The image shows a crowded city street with a man on a motorcycle, possibly a moped, surrounded by several pedestrians. He is looking off to his right, while a hand is reaching towards him, holding a piece of paper, possibly a note. \n\nAmong the people, two men are standing out, one separately from the motorcycle rider and the other pair are closer to the motorcycle, with one of them looking on as the exchange takes place. In the surroundings, there are various modes of transportation, including a car and a truck, parked or moving along the",
+      "easies": [
+        "The image features a busy street scene with a group of men gathered around a cycle rickshaw. A man in a blue blazer is handing a white paper to a rickshaw puller wearing a maroon shirt, while a yellow and black auto-rickshaw is parked in the background. A red fire hydrant stands on the sidewalk near the edge of the street.",
+        "In this image, a crowd of people is interacting on a city street, with a man in a suit holding documents. A rickshaw puller in a plaid lungi receives a paper from him, and a yellow auto-rickshaw is visible behind the group. A brown leather briefcase rests on the ground next to the man in the suit.",
+        "The image shows a street gathering where a man in a blue blazer distributes papers to a rickshaw driver. Several onlookers stand nearby, and a yellow auto-rickshaw is parked in the background. A wooden park bench is positioned against the building wall on the left side of the scene.",
+        "This image captures a moment on a crowded street with a man in a suit handing a document to a rickshaw puller. A group of men watches the exchange, and a yellow auto-rickshaw is parked behind them. A black street lamp post rises above the crowd on the right side of the frame."
+      ]
+    },
+    {
+      "gid": "sa_4286",
+      "easy_sims": [
+        0.19316482543945312,
+        0.16033142805099487,
+        0.06024095043540001,
+        0.08458889275789261
+      ],
+      "s7": 0.1755261868238449,
+      "s13": 0.18182776868343353,
+      "margin": -0.017638638615608215,
+      "h7": "The image features a group of tourists at an ancient ruin site, exploring and walking around. There are numerous people scattered throughout the airfield-like space outside the ruins, with several of them closer to the architecture. Some people are even seen walking near the ruins, inspiring an aura of ruin exploration. \n\nIn the background, large mountains come alive as a picturesque and historic scene. Visitors can appreciate the uniqueness and scale of the ruins in comparison to the surrounding landscape, making for a captivating experience.",
+      "h13": "The image features a grass-covered field where a large group of people is gathered. They are working together to maintain and restore what appears to be an old temple or historical building. The grassy field unfolds towards the hillside, giving a sense of scale to the area.\n\nThe people are scattered throughout the scene, some closer to the camera while others stand further away. Their efforts seem to be focused on preserving and possibly transferring items associated with the structure. This cooperative work likely contributes to the important historical preservation of the ruins.",
+      "easies": [
+        "The image features an ancient stone temple complex with ornate carvings, set against a backdrop of lush green mountains and a cloudy sky. A group of visitors is walking along a dirt path in the grassy foreground, and a large stone statue of a lion stands near the entrance of the ruins.",
+        "In this image, a weathered stone temple with intricate architecture stretches across a grassy field beneath overcast skies. Several tourists are scattered across the lawn taking photos, while a wooden rowboat rests on the grass near the left side of the temple.",
+        "The image shows a historic temple ruin surrounded by green hills and dense vegetation under a cloudy sky. People are strolling along a path in the foreground, and a tall metal flagpole stands prominently in the center of the courtyard.",
+        "This scene captures an old stone temple with detailed carvings and a grassy courtyard under a cloudy sky. Visitors are walking around the site, and a small campfire is burning in the middle of the field, with mountains rising in the background."
+      ]
+    },
+    {
+      "gid": "sa_5122",
+      "easy_sims": [
+        0.15967339277267456,
+        0.13822533190250397,
+        0.1846582144498825,
+        0.15355752408504486
+      ],
+      "s7": 0.15026916563510895,
+      "s13": 0.12960006296634674,
+      "margin": -0.05505815148353577,
+      "h7": "The image features a sign hanging on the side of a white building, possibly an old house. The sign contains various phrases, displaying practical meanings, such as marina de la Baixa, curving at the bottom, and relma de rogar. Underneath some text, there is a line resembling a river. The wall on the left side of the room with signs also seems to use artistic tiles, contributing to the visual intrigue of the scene. The presence of other objects in the image, such as a potted plant and a vase, adds to the overall ambiance of",
+      "h13": "The image displays a colorful decorative sign prominently mounted on a wall. This plaque features a blue and white background engraved with the words \"Avinguda De La Marina Baix.\" The text indicates a nearby harbor or waterfront area, likely helping people find their way through the city.\n\nThe sign combines intricate artwork and detailed text in a visually appealing way, making it an attractive point of interest for visitors. The vibrant blue and white pattern on the sign complements its surroundings and likely contributes to the cultural atmosphere of the area.",
+      "easies": [
+        "The image features a decorative street sign mounted on a textured beige wall. The sign is made of white ceramic tiles with blue and yellow floral patterns, displaying the text 'AVINGUDA DE LA MARINA BAIXA'. A small black bird is perched on the top edge of the sign, looking down at the lettering.",
+        "In this image, a tiled street sign reading 'AVINGUDA DE LA MARINA BAIXA' is affixed to a rough stucco wall. The white tiles are framed by ornate blue scrollwork and yellow flowers. A brass mailbox is attached to the wall directly below the sign.",
+        "The image displays a ceramic street plaque composed of several white tiles set into a stone wall. The tiles feature the name 'AVINGUDA DE LA MARINA BAIXA' in black serif letters, surrounded by blue and yellow decorative motifs. A potted green plant sits on a ledge just to the right of the sign.",
+        "This scene shows a close-up of a tiled street sign on a beige exterior wall. The sign bears the text 'AVINGUDA DE LA MARINA BAIXA' with blue and yellow ornamental borders. A set of keys is hanging from a hook on the wall next to the bottom corner of the sign."
+      ]
+    },
+    {
+      "gid": "sa_5954",
+      "easy_sims": [
+        0.12277521193027496,
+        0.1630133092403412,
+        0.14894340932369232,
+        0.14649008214473724
+      ],
+      "s7": 0.08669169992208481,
+      "s13": 0.13747750222682953,
+      "margin": -0.07632160931825638,
+      "h7": "The image features a group of people standing on a stone plaza, lined up to play a game using Wii remotes. The crowd is engaged with the activities and appears to be enjoying the experience. There are at least thirteen people visible in the scene, actively participating or watching as others play.\n\nIn the background, there is a large onion-domed structure and a couple of bicycles. A suitcase can also be spotted near the center of the image, possibly belonging to one of the passengers. The atmosphere of the plaza appears to be lively as people gather around",
+      "h13": "In the image, there is a lively group of people standing on the sidewalk of a street, talking in front of a corner building. Many of these individuals are using their smartphones or may be participating in a conference or workshop. They are of different ages and appear to be gathered for various purposes.\n\nAdditionally, a bicycle is parked further down the street, closer to the right side of the image. There are also two backpacks, one closer to the center and the other further towards the right side of the scene. The overall atmosphere of the image portrays a social and",
+      "easies": [
+        "The image features an outdoor urban scene with a group of people gathered on a paved plaza. A man in a dark blue jacket stands in the foreground holding a water bottle, while others converse near a blue promotional booth. A large yellow construction crane is visible in the background against a cloudy sky. A brown dog on a leash is standing near the group of people on the left side of the plaza.",
+        "In this image, a crowd of people is standing on a tiled square in front of a blue booth labeled 'Skolan först'. A man in a floral shirt and black pants is walking away from the camera in the foreground. To the left, a tall yellow crane reaches into the overcast sky above the buildings. A red bicycle is parked leaning against the booth on the right side of the scene.",
+        "The image shows a public event taking place on a stone-paved area with several individuals milling about. A man in a dark jacket and jeans stands prominently in the foreground, while a person in a floral shirt walks towards the right. A blue tent structure with a banner is set up in the middle ground. A green park bench is situated on the far left edge of the pavement near the crowd.",
+        "This scene depicts an outdoor gathering on a paved plaza under a cloudy sky, with a focus on a blue booth and several attendees. A man wearing a blue jacket and jeans is seen from behind in the foreground, and a woman in a floral blouse is walking nearby. A yellow construction crane towers over the buildings in the background. A silver motorcycle is parked on the right side of the plaza next to the booth."
+      ]
+    },
+    {
+      "gid": "sa_6749",
+      "easy_sims": [
+        0.16860947012901306,
+        0.13252711296081543,
+        0.10635662078857422,
+        0.1448758840560913
+      ],
+      "s7": 0.12562492489814758,
+      "s13": 0.07187722623348236,
+      "margin": -0.0967322438955307,
+      "h7": "The scene takes place at a busy urban area between a park and a large metallic building, with a sidewalk close to these structures. Several vehicles are scattered throughout the area, including multiple cars and two motorcycles. \n\nThere are several people on the sidewalk, walking and enjoying the atmosphere of the urban surroundings. One person seems to be using a cell phone, possibly texting or using an app. Another individual can be seen further down the sidewalk, heading in an opposite direction.",
+      "h13": "The image features a beachside cityscape with a row of large buildings, some of which have reflective windows. There is a group of people gathered and standing in the street or sidewalk, possibly enjoying the view or waiting for something. The scene also includes some parked cars along the waterfront, adding variety to the urban beach environment.",
+      "easies": [
+        "The image features an elevated concrete walkway leading toward a large modern building complex under a bright blue sky. In the distance, a tall cylindrical tower with a prominent logo stands next to a bowl-shaped structure. A red double-decker bus is parked on the road to the left, near the grassy areas and trees.",
+        "In this image, a wide pedestrian ramp curves alongside a modern building with a large glass facade. The iconic four-cylinder tower and the adjacent museum are visible against a partly cloudy sky. A group of cyclists is riding along the paved path in the foreground, passing by the metal railings.",
+        "The image features a view from a concrete walkway looking out over a city plaza with modern architecture. A tall tower with a blue and white logo dominates the skyline next to a silver bowl-shaped building. A large fountain is spraying water in the center of the plaza, surrounded by small trees and walkways.",
+        "This image shows an urban scene with a wide concrete path bordered by a metal railing on the right. In the background, a tall cylindrical tower and a modern exhibition center are visible under a sunny sky. A yellow taxi cab is driving down the street on the left side, passing by the green trees and streetlights."
+      ]
+    },
+    {
+      "gid": "sa_7547",
+      "easy_sims": [
+        0.14200028777122498,
+        0.12858374416828156,
+        0.1145559623837471,
+        0.14094766974449158
+      ],
+      "s7": 0.14028936624526978,
+      "s13": 0.1722855567932129,
+      "margin": -0.0017109215259552002,
+      "h7": "The image shows a group of motorcycle enthusiasts standing outside a store with a collection of motorcycles parked in front. A total of eight motorcycles are parked, creating a sense of unity among the riders. Some of the riders are spread out, while others are gathered in small groups, likely discussing their love for bikes.\n\nAt least five people can be seen among the riders, who seem to be the main subjects of attention. They are enjoying themselves as they admire each other's bikes, share stories, and exchange personally customized motorcycles. One tiny",
+      "h13": "The image depicts a group of people gathered around a row of motorcycles and mopeds parked in front of a store. There are numerous chairs and potted plants nearby, but in the background, some motorcycles are blocking the entrance to the store. The individuals are engaged in various activities, possibly chatting, purchasing motorcycles or mopeds, or simply enjoying the atmosphere at the location. The scene captures the vibe of a casual and social gathering centred around the motorcycles parked in the street.",
+      "easies": [
+        "The image features a street-side scene with several parked scooters in the foreground, including a bright orange one and a green one. A group of people is gathered near a closed metal shutter, where a woman in a white top is raising her hand. A small brown dog is sleeping on the ground near the scooters, adding to the casual atmosphere.",
+        "In this image, a group of people stands outside a building with a gray roll-up door, surrounded by parked motorbikes. A man in a blue shirt is leaning over a black trash bin, while a woman in a white tank top gestures nearby. A red bicycle is parked against the wall next to the bin, completing the street scene.",
+        "The image shows a casual outdoor gathering with several individuals standing near a storefront with a closed metal shutter. In the foreground, a line of scooters is parked, including a prominent orange one and a blue one. A cat is sitting on the seat of the blue scooter, watching the people nearby.",
+        "This scene depicts a group of people socializing on a sidewalk in front of a building with a large metal door. Various motorbikes, such as a green and black one, are parked in the foreground, and a man in a black shirt with white stars is sitting on the right. A wooden bench is placed behind the group, providing seating for the area."
+      ]
+    },
+    {
+      "gid": "sa_8367",
+      "easy_sims": [
+        0.1955316960811615,
+        0.1706855595111847,
+        0.12348583340644836,
+        0.16808417439460754
+      ],
+      "s7": 0.16899541020393372,
+      "s13": 0.1648157835006714,
+      "margin": -0.030715912580490112,
+      "h7": "The image depicts a town's plaza with a bustling street lined with various buildings on both sides. In the center of the scene, there is a statue featuring a person pointing their gun upwards. The statue is located next to the street, drawing attention from passersby.\n\nOn the far left side of the image, there is a person cycling down the street, possibly enjoying the lively atmosphere. On the road, several cars are parked or moving, with one car against the right edge of the image and two others occupying the middle of the frame. Additionally, a p",
+      "h13": "The scene features a tall stone statue located on a street corner in town. The statue is comfortably sitting in the middle of a pedestrian zone for residents and tourists to enjoy. Several cars can be seen parked or passing by the statue, one near the right side and two others further back, towards the right of the image.\n\nA person is also visible in the scene, perhaps admiring the statue or passing by. The townscape around the statue gives an impression of a pleasant and welcoming atmosphere for people to appreciate the town's history and features.",
+      "easies": [
+        "The image features a quaint European street scene centered on a bronze statue of a man standing on a stone pedestal. To the left, there is a building with a tiled roof and a hanging sign, while a white car is parked further down the road. A street lamp stands nearby, and a wooden bench sits empty in the foreground square.",
+        "In this image, a statue of a historical figure stands prominently in the middle of a cobblestone square. Behind the monument, a large green tree rises above the tiled roofs of nearby buildings. A blue bicycle is leaning against the wall of the building on the right side of the street.",
+        "The image shows a town square featuring a tall statue on a dark stone plinth, surrounded by buildings with orange tiled roofs. A black van and a white car are parked in the background near a large tree. A small fountain is visible in the lower right corner of the paved area.",
+        "This scene depicts a sunny street with a statue of a man in historical clothing standing on a pedestal in the center. Buildings with tiled roofs flank the street, and a white car is parked in the distance. A group of pigeons is gathered on the cobblestones directly in front of the statue's base."
+      ]
+    },
+    {
+      "gid": "sa_9166",
+      "easy_sims": [
+        0.21406733989715576,
+        0.1620892733335495,
+        0.22022077441215515,
+        0.1781185418367386
+      ],
+      "s7": 0.18364566564559937,
+      "s13": 0.17252545058727264,
+      "margin": -0.04769532382488251,
+      "h7": "In this scene, there is a motorcycle police officer wearing a helmet sitting on a black and blue motorcycle, while keeping an eye on a group of people nearby. Another motorcycle is visible on the left side of the image. Several cars and trucks are also present in the street, showing that it is a busy and lively location. \n\nThere are two people standing together, one closer to the motorcycle officer and the other further back. Two more people are standing separately along the same stretch of the street. Some individuals in the scene seem to be carrying backpacks, with one placed on the",
+      "h13": "In the image, a couple of men are riding motorcycles on a road. One officer is riding a large motorcycle ahead of two other motorcycles. The sports motorcyclist is evident in the scene, with the cop in front, and the other two riders following closely. \n\nAlong the side of the road, there are several people standing or walking, possibly watching the motorcyclists or going about their day. In the traffic behind the motorcycles, several cars and two trucks can be observed to be driving or stopped further down the road.",
+      "easies": [
+        "The image features a police officer on a large blue and white motorcycle parked on a paved road. In the background, a blue truck and a silver car are driving along the highway, and a small motorcycle with two riders is approaching from the left. A red stop sign is visible on the grassy shoulder near the road.",
+        "In this image, a police officer in a dark uniform sits on a white and blue motorcycle under a clear blue sky. Behind him, a blue truck and a silver car travel down the road, while a smaller motorcycle carrying two people rides in the left lane. A wooden bench is placed on the grass beside the highway.",
+        "The image shows a traffic scene on a sunny day with a police officer on a blue and white motorcycle in the foreground. In the background, a blue truck and a silver car are on the road, and a small motorcycle with two riders is approaching. A brown dog is walking along the side of the road near the vehicles.",
+        "This image captures a police officer on a large blue and white motorcycle on a paved highway. Further back, a blue truck and a silver car are driving, and a smaller motorcycle with two riders is visible on the left. A yellow bicycle is leaning against the guardrail in the distance."
+      ]
+    },
+    {
+      "gid": "sa_9998",
+      "easy_sims": [
+        0.12914209067821503,
+        0.18162760138511658,
+        0.16290418803691864,
+        0.10582054406404495
+      ],
+      "s7": 0.13776546716690063,
+      "s13": 0.11059427261352539,
+      "margin": -0.07103332877159119,
+      "h7": "The image depicts a harbor with several boats of varying sizes docked on available piers within a bay of water. There are numerous people attending to their boats or walking around the piers, some of whom are taking pictures or capturing videos. \n\nThere are three boats of particular interest positioned on the water next to each other, possibly indicating a social event or gathering. A person can be seen standing towards the right side of the scene next to one of the boats. The event seems to be peaceful and enjoyable, focusing on the waterfront atmosphere.",
+      "h13": "The image shows a calm harbor with several white boats anchored in the water. There is a considerable presence of boats in the scene, all located near a dock. In total, 12 boats are visible, some larger and others smaller, with one positioned at the very edge of the harbor.\n\nOn the dock, there is a person standing on the left side, possibly taking in the view or observing the boats. Additionally, a pair of scissors can be seen on a surface at the edge of the dock, which may be related to any ongoing maintenance work being done nearby.",
+      "easies": [
+        "The image features a marina filled with calm turquoise water, where several white sailboats are moored to wooden docks. A large sailing yacht with a furled sail sits prominently on the left, while a person stands on the lower pier capturing the scene with a camera. A wooden rowboat floats gently near the dock in the foreground.",
+        "In this image, a sunny harbor scene is captured with multiple sailboats docked along the wooden piers. A man with a backpack is seen taking a photograph from the pier on the right, while another person relaxes on the deck of a boat in the center. A small green rowboat is tied to the dock near the bottom left corner.",
+        "The scene shows a peaceful marina with bright blue water and white boats moored to wooden docks. On the left, a large yacht with blue fenders is docked, and on the right, a man stands on the pier facing the water. A white seagull is perched on the railing of the boat in the center, looking towards the water.",
+        "This image displays a harbor area with several sailboats docked in clear blue water. A large white boat dominates the left side, and a person is visible standing on the wooden pier on the right. A small red kayak is floating in the water between the large yacht and the central dock."
+      ]
+    }
+  ],
+  "sub_rows": [
+    {
+      "gid": "sa_1000",
+      "stem": "sa_1000_r0c0",
+      "s7": 0.12820476293563843,
+      "s13": 0.12238793820142746
+    },
+    {
+      "gid": "sa_1000",
+      "stem": "sa_1000_r0c1",
+      "s7": 0.06219358742237091,
+      "s13": 0.12188970297574997
+    },
+    {
+      "gid": "sa_1000",
+      "stem": "sa_1000_r1c0",
+      "s7": 0.13622833788394928,
+      "s13": 0.14440582692623138
+    },
+    {
+      "gid": "sa_1000",
+      "stem": "sa_1000_r1c1",
+      "s7": 0.08558230102062225,
+      "s13": 0.05577214062213898
+    },
+    {
+      "gid": "sa_183",
+      "stem": "sa_183_r0c0",
+      "s7": 0.14119333028793335,
+      "s13": 0.16889475286006927
+    },
+    {
+      "gid": "sa_183",
+      "stem": "sa_183_r0c1",
+      "s7": 0.14253529906272888,
+      "s13": 0.1291651725769043
+    },
+    {
+      "gid": "sa_183",
+      "stem": "sa_183_r1c0",
+      "s7": 0.15639671683311462,
+      "s13": -0.03875251114368439
+    },
+    {
+      "gid": "sa_183",
+      "stem": "sa_183_r1c1",
+      "s7": 0.11424470692873001,
+      "s13": 0.15270757675170898
+    },
+    {
+      "gid": "sa_2646",
+      "stem": "sa_2646_r0c0",
+      "s7": 0.047875724732875824,
+      "s13": 0.1082826480269432
+    },
+    {
+      "gid": "sa_2646",
+      "stem": "sa_2646_r0c1",
+      "s7": 0.14024114608764648,
+      "s13": 0.19603538513183594
+    },
+    {
+      "gid": "sa_2646",
+      "stem": "sa_2646_r1c0",
+      "s7": 0.17096956074237823,
+      "s13": 0.1443919539451599
+    },
+    {
+      "gid": "sa_2646",
+      "stem": "sa_2646_r1c1",
+      "s7": 0.17496199905872345,
+      "s13": 0.11147483438253403
+    },
+    {
+      "gid": "sa_3439",
+      "stem": "sa_3439_r0c0",
+      "s7": 0.08774740248918533,
+      "s13": 0.09789515286684036
+    },
+    {
+      "gid": "sa_3439",
+      "stem": "sa_3439_r0c1",
+      "s7": 0.0956515297293663,
+      "s13": 0.038044076412916183
+    },
+    {
+      "gid": "sa_3439",
+      "stem": "sa_3439_r1c0",
+      "s7": 0.13090898096561432,
+      "s13": 0.13778559863567352
+    },
+    {
+      "gid": "sa_3439",
+      "stem": "sa_3439_r1c1",
+      "s7": 0.15435290336608887,
+      "s13": 0.08770505338907242
+    },
+    {
+      "gid": "sa_4286",
+      "stem": "sa_4286_r0c0",
+      "s7": 0.14895136654376984,
+      "s13": 0.15450391173362732
+    },
+    {
+      "gid": "sa_4286",
+      "stem": "sa_4286_r0c1",
+      "s7": 0.0665166899561882,
+      "s13": 0.05608968436717987
+    },
+    {
+      "gid": "sa_4286",
+      "stem": "sa_4286_r1c0",
+      "s7": 0.11764296144247055,
+      "s13": 0.16747607290744781
+    },
+    {
+      "gid": "sa_4286",
+      "stem": "sa_4286_r1c1",
+      "s7": 0.11983953416347504,
+      "s13": 0.12284445762634277
+    },
+    {
+      "gid": "sa_5122",
+      "stem": "sa_5122_r0c0",
+      "s7": 0.2123873233795166,
+      "s13": 0.13528981804847717
+    },
+    {
+      "gid": "sa_5122",
+      "stem": "sa_5122_r0c1",
+      "s7": 0.1926317811012268,
+      "s13": 0.18506214022636414
+    },
+    {
+      "gid": "sa_5122",
+      "stem": "sa_5122_r1c0",
+      "s7": 0.1573801338672638,
+      "s13": 0.19588921964168549
+    },
+    {
+      "gid": "sa_5122",
+      "stem": "sa_5122_r1c1",
+      "s7": 0.14701807498931885,
+      "s13": 0.12202651798725128
+    },
+    {
+      "gid": "sa_5954",
+      "stem": "sa_5954_r0c0",
+      "s7": 0.20251022279262543,
+      "s13": 0.17646484076976776
+    },
+    {
+      "gid": "sa_5954",
+      "stem": "sa_5954_r0c1",
+      "s7": 0.10188573598861694,
+      "s13": 0.08360439538955688
+    },
+    {
+      "gid": "sa_5954",
+      "stem": "sa_5954_r1c0",
+      "s7": 0.1649787276983261,
+      "s13": 0.181335911154747
+    },
+    {
+      "gid": "sa_5954",
+      "stem": "sa_5954_r1c1",
+      "s7": 0.15334226191043854,
+      "s13": 0.10225571691989899
+    },
+    {
+      "gid": "sa_6749",
+      "stem": "sa_6749_r0c0",
+      "s7": 0.16879001259803772,
+      "s13": 0.09698408097028732
+    },
+    {
+      "gid": "sa_6749",
+      "stem": "sa_6749_r0c1",
+      "s7": 0.07464634627103806,
+      "s13": 0.05604029819369316
+    },
+    {
+      "gid": "sa_6749",
+      "stem": "sa_6749_r1c0",
+      "s7": 0.15159420669078827,
+      "s13": 0.10454423725605011
+    },
+    {
+      "gid": "sa_6749",
+      "stem": "sa_6749_r1c1",
+      "s7": 0.10975158959627151,
+      "s13": 0.12912221252918243
+    },
+    {
+      "gid": "sa_7547",
+      "stem": "sa_7547_r0c0",
+      "s7": 0.1269000768661499,
+      "s13": 0.10834026336669922
+    },
+    {
+      "gid": "sa_7547",
+      "stem": "sa_7547_r0c1",
+      "s7": 0.1012224480509758,
+      "s13": 0.13340862095355988
+    },
+    {
+      "gid": "sa_7547",
+      "stem": "sa_7547_r1c0",
+      "s7": 0.1730254888534546,
+      "s13": 0.19541610777378082
+    },
+    {
+      "gid": "sa_7547",
+      "stem": "sa_7547_r1c1",
+      "s7": 0.1453952044248581,
+      "s13": 0.19500774145126343
+    },
+    {
+      "gid": "sa_8367",
+      "stem": "sa_8367_r0c0",
+      "s7": 0.13319864869117737,
+      "s13": 0.10735688358545303
+    },
+    {
+      "gid": "sa_8367",
+      "stem": "sa_8367_r0c1",
+      "s7": 0.13729961216449738,
+      "s13": 0.21088671684265137
+    },
+    {
+      "gid": "sa_8367",
+      "stem": "sa_8367_r1c0",
+      "s7": 0.1419650763273239,
+      "s13": 0.12978404760360718
+    },
+    {
+      "gid": "sa_8367",
+      "stem": "sa_8367_r1c1",
+      "s7": 0.21408694982528687,
+      "s13": 0.19499236345291138
+    },
+    {
+      "gid": "sa_9166",
+      "stem": "sa_9166_r0c0",
+      "s7": 0.18899545073509216,
+      "s13": 0.17093776166439056
+    },
+    {
+      "gid": "sa_9166",
+      "stem": "sa_9166_r0c1",
+      "s7": 0.16256286203861237,
+      "s13": 0.20441436767578125
+    },
+    {
+      "gid": "sa_9166",
+      "stem": "sa_9166_r1c0",
+      "s7": 0.10336910933256149,
+      "s13": 0.14761701226234436
+    },
+    {
+      "gid": "sa_9166",
+      "stem": "sa_9166_r1c1",
+      "s7": 0.14413395524024963,
+      "s13": 0.1421574503183365
+    },
+    {
+      "gid": "sa_9998",
+      "stem": "sa_9998_r0c0",
+      "s7": 0.10995017737150192,
+      "s13": 0.10487077385187149
+    },
+    {
+      "gid": "sa_9998",
+      "stem": "sa_9998_r0c1",
+      "s7": 0.17616313695907593,
+      "s13": 0.14394725859165192
+    },
+    {
+      "gid": "sa_9998",
+      "stem": "sa_9998_r1c0",
+      "s7": 0.1308441311120987,
+      "s13": 0.12320743501186371
+    },
+    {
+      "gid": "sa_9998",
+      "stem": "sa_9998_r1c1",
+      "s7": 0.10056544840335846,
+      "s13": 0.08796833455562592
+    }
+  ]
+}

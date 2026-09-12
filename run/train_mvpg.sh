@@ -14,9 +14,16 @@ STEPS=${STEPS:-5000}
 GROUPS_PER_STEP=${GROUPS_PER_STEP:-4}
 
 # 建议先冒烟：STEPS=2 MAXNEW=8 bash run/train_mvpg.sh
-MAXNEW=${MAXNEW:-64}
+# 默认对齐 ref caption 的生成预算（128），避免策略输出被截断导致难负样本项带负偏置
+MAXNEW=${MAXNEW:-128}
 # KL 正则权重（仅主图行）：过大(>=1)会压死策略、奖励长期不涨，建议 0.05~0.2
 KL_WEIGHT=${KL_WEIGHT:-0.1}
+# RCGR 幻觉负样本基线项系数（β，整图级 neg_captions）：设为 0 取消 β 项（消融）
+BETA=${BETA:-0.5}
+# 原模型 caption 难负样本竞争项（区域级）：训练脚本按 MODEL_DIR 自动选择同基座 ref
+# （7B 训 7B、13B 训 13B），只使用对应的 REF*_WEIGHT；设为 0 可关闭（消融）
+REF7_WEIGHT=${REF7_WEIGHT:-0.5}
+REF13_WEIGHT=${REF13_WEIGHT:-0.5}
 
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -43,5 +50,8 @@ $PY mvpg_run/run_mvpg.py \
     --lr 1e-4 \
     --temperature 1.0 \
     --kl-weight "$KL_WEIGHT" \
+    --beta "$BETA" \
+    --ref7-weight "$REF7_WEIGHT" \
+    --ref13-weight "$REF13_WEIGHT" \
     --log-interval 5 \
     --save-interval 50

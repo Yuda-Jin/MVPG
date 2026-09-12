@@ -1,0 +1,709 @@
+{
+  "summary": {
+    "n_groups": 12,
+    "n_hall": 45,
+    "n_real": 40,
+    "box_hall_mean": 0.23200078209241232,
+    "box_real_mean": 0.24508913680911065,
+    "box_hall_std": 0.01662731839330043,
+    "box_real_std": 0.019443598066759795,
+    "box_hall_min": 0.20392346382141113,
+    "box_hall_max": 0.27408188581466675,
+    "box_real_min": 0.19605752825737,
+    "box_real_max": 0.2789241075515747,
+    "box_margin_mean": 0.014618795489271481,
+    "box_margin_gt0": 10,
+    "box_cohens_d": 0.7234994210354792,
+    "box_acc": 0.6470588235294118,
+    "short_hall_mean": 0.20539727972613442,
+    "short_real_mean": 0.2226491838693619,
+    "short_hall_std": 0.026476624749419066,
+    "short_real_std": 0.029779836425639014,
+    "short_margin_mean": 0.01817377282099591,
+    "short_margin_gt0": 10,
+    "short_cohens_d": 0.6122760255115398,
+    "short_acc": 0.6352941176470588
+  },
+  "rows": [
+    {
+      "gid": "sa_1000",
+      "class": "hall",
+      "phrase": "a brown dog",
+      "box_sim": 0.24798724055290222,
+      "short_sim": 0.231127068400383,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "hall",
+      "phrase": "a woven basket",
+      "box_sim": 0.23246151208877563,
+      "short_sim": 0.20827364921569824,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "hall",
+      "phrase": "a brass oil lamp",
+      "box_sim": 0.22148703038692474,
+      "short_sim": 0.20358750224113464,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "hall",
+      "phrase": "a wooden ladder",
+      "box_sim": 0.25828883051872253,
+      "short_sim": 0.24917113780975342,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "real",
+      "phrase": "two human figures",
+      "box_sim": 0.2717783451080322,
+      "short_sim": 0.268905907869339,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "real",
+      "phrase": "a wall painting",
+      "box_sim": 0.2789241075515747,
+      "short_sim": 0.28567472100257874,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "real",
+      "phrase": "a green jacket",
+      "box_sim": 0.2520785629749298,
+      "short_sim": 0.25591373443603516,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "real",
+      "phrase": "a striped skirt",
+      "box_sim": 0.24208369851112366,
+      "short_sim": 0.21450358629226685,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_1000",
+      "class": "real",
+      "phrase": "a headdress",
+      "box_sim": 0.2591850459575653,
+      "short_sim": 0.23721954226493835,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_183",
+      "class": "hall",
+      "phrase": "a checkered flag",
+      "box_sim": 0.20521003007888794,
+      "short_sim": 0.17418810725212097,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_183",
+      "class": "real",
+      "phrase": "a white race car",
+      "box_sim": 0.23534071445465088,
+      "short_sim": 0.22060728073120117,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_183",
+      "class": "real",
+      "phrase": "an asphalt track",
+      "box_sim": 0.21693603694438934,
+      "short_sim": 0.21639439463615417,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_183",
+      "class": "real",
+      "phrase": "green grass",
+      "box_sim": 0.19605752825737,
+      "short_sim": 0.1397589147090912,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_183",
+      "class": "real",
+      "phrase": "orange and blue livery",
+      "box_sim": 0.25282081961631775,
+      "short_sim": 0.23512274026870728,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "hall",
+      "phrase": "a brown dog",
+      "box_sim": 0.2374480664730072,
+      "short_sim": 0.19924074411392212,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "hall",
+      "phrase": "a red bicycle",
+      "box_sim": 0.21476244926452637,
+      "short_sim": 0.16662544012069702,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "hall",
+      "phrase": "a child in a blue jacket",
+      "box_sim": 0.22784459590911865,
+      "short_sim": 0.1779775619506836,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "hall",
+      "phrase": "a wooden bench",
+      "box_sim": 0.22683146595954895,
+      "short_sim": 0.18010330200195312,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "real",
+      "phrase": "women walking",
+      "box_sim": 0.2545991837978363,
+      "short_sim": 0.23232023417949677,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "real",
+      "phrase": "a white building",
+      "box_sim": 0.23783645033836365,
+      "short_sim": 0.22873233258724213,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "real",
+      "phrase": "green trees",
+      "box_sim": 0.2222488522529602,
+      "short_sim": 0.1968994140625,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_2646",
+      "class": "real",
+      "phrase": "a paved plaza",
+      "box_sim": 0.2398402839899063,
+      "short_sim": 0.22113710641860962,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_3439",
+      "class": "hall",
+      "phrase": "a fire hydrant",
+      "box_sim": 0.22855769097805023,
+      "short_sim": 0.17799827456474304,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_3439",
+      "class": "hall",
+      "phrase": "a brown briefcase",
+      "box_sim": 0.24964122474193573,
+      "short_sim": 0.24888937175273895,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_3439",
+      "class": "hall",
+      "phrase": "a wooden bench",
+      "box_sim": 0.23695310950279236,
+      "short_sim": 0.19169782102108002,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_3439",
+      "class": "hall",
+      "phrase": "a street lamp",
+      "box_sim": 0.24586725234985352,
+      "short_sim": 0.24431201815605164,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_3439",
+      "class": "real",
+      "phrase": "a man in a blue blazer",
+      "box_sim": 0.21290960907936096,
+      "short_sim": 0.16383886337280273,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_3439",
+      "class": "real",
+      "phrase": "a yellow auto-rickshaw",
+      "box_sim": 0.21170669794082642,
+      "short_sim": 0.17838898301124573,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_3439",
+      "class": "real",
+      "phrase": "a motorcycle",
+      "box_sim": 0.2416670173406601,
+      "short_sim": 0.2119138538837433,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_4286",
+      "class": "hall",
+      "phrase": "a stone lion statue",
+      "box_sim": 0.22304850816726685,
+      "short_sim": 0.21075023710727692,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_4286",
+      "class": "hall",
+      "phrase": "a wooden rowboat",
+      "box_sim": 0.23812636733055115,
+      "short_sim": 0.21725594997406006,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_4286",
+      "class": "hall",
+      "phrase": "a metal flagpole",
+      "box_sim": 0.20603013038635254,
+      "short_sim": 0.20019596815109253,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_4286",
+      "class": "hall",
+      "phrase": "a campfire",
+      "box_sim": 0.23452875018119812,
+      "short_sim": 0.175703227519989,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_4286",
+      "class": "real",
+      "phrase": "an ancient stone temple",
+      "box_sim": 0.27009427547454834,
+      "short_sim": 0.2418527603149414,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_4286",
+      "class": "real",
+      "phrase": "green mountains",
+      "box_sim": 0.23464220762252808,
+      "short_sim": 0.22873154282569885,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_4286",
+      "class": "real",
+      "phrase": "a grassy field",
+      "box_sim": 0.2434167116880417,
+      "short_sim": 0.22793740034103394,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5122",
+      "class": "hall",
+      "phrase": "a black bird",
+      "box_sim": 0.27408188581466675,
+      "short_sim": 0.2769460380077362,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5122",
+      "class": "hall",
+      "phrase": "a brass mailbox",
+      "box_sim": 0.2368284910917282,
+      "short_sim": 0.23272858560085297,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5122",
+      "class": "hall",
+      "phrase": "a potted plant",
+      "box_sim": 0.2587643563747406,
+      "short_sim": 0.2515467405319214,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5122",
+      "class": "hall",
+      "phrase": "a set of keys",
+      "box_sim": 0.23018991947174072,
+      "short_sim": 0.20178928971290588,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5122",
+      "class": "real",
+      "phrase": "a tiled street sign",
+      "box_sim": 0.22849170863628387,
+      "short_sim": 0.1934097707271576,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5122",
+      "class": "real",
+      "phrase": "ceramic tiles",
+      "box_sim": 0.26190683245658875,
+      "short_sim": 0.22683735191822052,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5122",
+      "class": "real",
+      "phrase": "blue and yellow patterns",
+      "box_sim": 0.23640428483486176,
+      "short_sim": 0.24274097383022308,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5954",
+      "class": "hall",
+      "phrase": "a yellow crane",
+      "box_sim": 0.22650283575057983,
+      "short_sim": 0.23795852065086365,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5954",
+      "class": "hall",
+      "phrase": "a red bicycle",
+      "box_sim": 0.2142496556043625,
+      "short_sim": 0.18375477194786072,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5954",
+      "class": "hall",
+      "phrase": "a green bench",
+      "box_sim": 0.23513804376125336,
+      "short_sim": 0.21247100830078125,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5954",
+      "class": "hall",
+      "phrase": "a silver motorcycle",
+      "box_sim": 0.21403849124908447,
+      "short_sim": 0.19064103066921234,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5954",
+      "class": "real",
+      "phrase": "a blue booth",
+      "box_sim": 0.2519804537296295,
+      "short_sim": 0.25437167286872864,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5954",
+      "class": "real",
+      "phrase": "a crowd of people",
+      "box_sim": 0.24447989463806152,
+      "short_sim": 0.20365576446056366,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_5954",
+      "class": "real",
+      "phrase": "a man in a blue jacket",
+      "box_sim": 0.22457852959632874,
+      "short_sim": 0.1836114525794983,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_6749",
+      "class": "hall",
+      "phrase": "a red double-decker bus",
+      "box_sim": 0.20576587319374084,
+      "short_sim": 0.14780788123607635,
+      "n_patch": 1008
+    },
+    {
+      "gid": "sa_6749",
+      "class": "hall",
+      "phrase": "a group of cyclists",
+      "box_sim": 0.22271856665611267,
+      "short_sim": 0.18639519810676575,
+      "n_patch": 1008
+    },
+    {
+      "gid": "sa_6749",
+      "class": "hall",
+      "phrase": "a large fountain",
+      "box_sim": 0.20690768957138062,
+      "short_sim": 0.16248701512813568,
+      "n_patch": 1008
+    },
+    {
+      "gid": "sa_6749",
+      "class": "hall",
+      "phrase": "a yellow taxi",
+      "box_sim": 0.2106057107448578,
+      "short_sim": 0.18882283568382263,
+      "n_patch": 1008
+    },
+    {
+      "gid": "sa_6749",
+      "class": "real",
+      "phrase": "a tall cylindrical tower",
+      "box_sim": 0.24493804574012756,
+      "short_sim": 0.20772159099578857,
+      "n_patch": 1008
+    },
+    {
+      "gid": "sa_6749",
+      "class": "real",
+      "phrase": "a modern building",
+      "box_sim": 0.23617435991764069,
+      "short_sim": 0.2150762975215912,
+      "n_patch": 1008
+    },
+    {
+      "gid": "sa_6749",
+      "class": "real",
+      "phrase": "a concrete walkway",
+      "box_sim": 0.23464038968086243,
+      "short_sim": 0.21193450689315796,
+      "n_patch": 1008
+    },
+    {
+      "gid": "sa_7547",
+      "class": "hall",
+      "phrase": "a brown dog",
+      "box_sim": 0.23987829685211182,
+      "short_sim": 0.2104288935661316,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_7547",
+      "class": "hall",
+      "phrase": "a red bicycle",
+      "box_sim": 0.21766698360443115,
+      "short_sim": 0.18507394194602966,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_7547",
+      "class": "hall",
+      "phrase": "a cat",
+      "box_sim": 0.24790984392166138,
+      "short_sim": 0.23838405311107635,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_7547",
+      "class": "hall",
+      "phrase": "a wooden bench",
+      "box_sim": 0.22815823554992676,
+      "short_sim": 0.19604834914207458,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_7547",
+      "class": "real",
+      "phrase": "parked motorcycles",
+      "box_sim": 0.25138434767723083,
+      "short_sim": 0.21488934755325317,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_7547",
+      "class": "real",
+      "phrase": "a metal shutter",
+      "box_sim": 0.26721569895744324,
+      "short_sim": 0.2511579990386963,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_7547",
+      "class": "real",
+      "phrase": "a group of people",
+      "box_sim": 0.22675946354866028,
+      "short_sim": 0.20303818583488464,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_8367",
+      "class": "hall",
+      "phrase": "a wooden bench",
+      "box_sim": 0.25061169266700745,
+      "short_sim": 0.21686282753944397,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_8367",
+      "class": "hall",
+      "phrase": "a blue bicycle",
+      "box_sim": 0.23311427235603333,
+      "short_sim": 0.21519547700881958,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_8367",
+      "class": "hall",
+      "phrase": "a small fountain",
+      "box_sim": 0.24585354328155518,
+      "short_sim": 0.21997392177581787,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_8367",
+      "class": "hall",
+      "phrase": "a group of pigeons",
+      "box_sim": 0.20392346382141113,
+      "short_sim": 0.17716293036937714,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_8367",
+      "class": "real",
+      "phrase": "a statue",
+      "box_sim": 0.24884194135665894,
+      "short_sim": 0.2432134598493576,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_8367",
+      "class": "real",
+      "phrase": "a cobblestone square",
+      "box_sim": 0.23308606445789337,
+      "short_sim": 0.21313276886940002,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_8367",
+      "class": "real",
+      "phrase": "tiled roofs",
+      "box_sim": 0.26673001050949097,
+      "short_sim": 0.26798298954963684,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_9166",
+      "class": "hall",
+      "phrase": "a red stop sign",
+      "box_sim": 0.25581154227256775,
+      "short_sim": 0.2191055417060852,
+      "n_patch": 988
+    },
+    {
+      "gid": "sa_9166",
+      "class": "hall",
+      "phrase": "a wooden bench",
+      "box_sim": 0.2484671175479889,
+      "short_sim": 0.1956818848848343,
+      "n_patch": 988
+    },
+    {
+      "gid": "sa_9166",
+      "class": "hall",
+      "phrase": "a brown dog",
+      "box_sim": 0.2600010633468628,
+      "short_sim": 0.21726393699645996,
+      "n_patch": 988
+    },
+    {
+      "gid": "sa_9166",
+      "class": "hall",
+      "phrase": "a yellow bicycle",
+      "box_sim": 0.240587055683136,
+      "short_sim": 0.20762702822685242,
+      "n_patch": 988
+    },
+    {
+      "gid": "sa_9166",
+      "class": "real",
+      "phrase": "a police officer on a motorcycle",
+      "box_sim": 0.27583831548690796,
+      "short_sim": 0.1957542598247528,
+      "n_patch": 988
+    },
+    {
+      "gid": "sa_9166",
+      "class": "real",
+      "phrase": "a blue truck",
+      "box_sim": 0.2707771956920624,
+      "short_sim": 0.2569238841533661,
+      "n_patch": 988
+    },
+    {
+      "gid": "sa_9166",
+      "class": "real",
+      "phrase": "a silver car",
+      "box_sim": 0.27712664008140564,
+      "short_sim": 0.2680865526199341,
+      "n_patch": 988
+    },
+    {
+      "gid": "sa_9998",
+      "class": "hall",
+      "phrase": "a wooden rowboat",
+      "box_sim": 0.23198890686035156,
+      "short_sim": 0.19801875948905945,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_9998",
+      "class": "hall",
+      "phrase": "a green rowboat",
+      "box_sim": 0.21741285920143127,
+      "short_sim": 0.19894984364509583,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_9998",
+      "class": "hall",
+      "phrase": "a white seagull",
+      "box_sim": 0.22381216287612915,
+      "short_sim": 0.19050417840480804,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_9998",
+      "class": "hall",
+      "phrase": "a red kayak",
+      "box_sim": 0.2239723801612854,
+      "short_sim": 0.22614972293376923,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_9998",
+      "class": "real",
+      "phrase": "white sailboats",
+      "box_sim": 0.251313716173172,
+      "short_sim": 0.19662071764469147,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_9998",
+      "class": "real",
+      "phrase": "wooden docks",
+      "box_sim": 0.2655589282512665,
+      "short_sim": 0.24848279356956482,
+      "n_patch": 1014
+    },
+    {
+      "gid": "sa_9998",
+      "class": "real",
+      "phrase": "a person with a camera",
+      "box_sim": 0.23117250204086304,
+      "short_sim": 0.2014717012643814,
+      "n_patch": 1014
+    }
+  ]
+}
