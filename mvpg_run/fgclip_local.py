@@ -28,6 +28,9 @@ from mvpg_run.fgclip2 import modeling_fgclip2 as _M
 
 # walk_type/short 文本最大 token 数（README：short captions -> max_length=64）
 TEXT_MAX_LEN = 64
+# walk_type/long 走 longtext 位置编码分支，position_embeddings 表长固定为 196，
+# 因此输入长度必须**恰为** 196（不足补 pad），不能沿用 short 的 64。
+LONG_TEXT_MAX_LEN = 196
 PATCH_SIZE = 16
 
 
@@ -113,20 +116,24 @@ class _SpTokenizer:
         self.eos_id = 1
 
     def __call__(self, texts, max_length=TEXT_MAX_LEN):
-        ids_list, attn_list = [], []
+        """README：lower + 右侧 padding 到 max_length + 末尾 eos。
+
+        **刻意不返回 attention_mask**，与官方口径一致：官方 tokenizer 的
+        `model_input_names` 只有 `input_ids`，README 推理示例是
+        `get_text_features(**caption_input)`（即 `attention_mask=None`）；
+        且 `Fgclip2TextTransformer.forward` 在 flash-attn 分支会强制把 mask 置 None。
+        FG-CLIP2 文本塔**无因果掩码**、池化取**最后一个 token**（右侧 padding 下恒为
+        pad 槽），该 pad 槽在训练时即充当聚合 query —— 额外传 mask 会屏蔽 pad key，
+        属于训练分布外的用法（实测可让余弦偏差达 0.155，足以改变排序）。
+        """
+        ids_list = []
         for t in texts:
             ids = self.sp.encode(str(t).lower(), out_type=int)  # README 要求 lower
             # 与官方 tokenizer(...) 默认 add_special_tokens=True 一致：末尾加 eos
             ids = ids[: max_length - 1] + [self.eos_id]
-            n = len(ids)
-            ids = ids + [self.pad_id] * (max_length - n)
-            attn = [1] * n + [0] * (max_length - n)
+            ids = ids + [self.pad_id] * (max_length - len(ids))
             ids_list.append(ids)
-            attn_list.append(attn)
-        return {
-            "input_ids": torch.tensor(ids_list, dtype=torch.long),
-            "attention_mask": torch.tensor(attn_list, dtype=torch.long),
-        }
+        return {"input_ids": torch.tensor(ids_list, dtype=torch.long)}
 
 
 # -----------------------------------------------------------------------------
@@ -190,14 +197,48 @@ class FGChip:
         feats = []
         for i in range(0, len(texts), batch_size):
             tok = self.tokenizer(texts[i:i + batch_size])
-            for k, v in tok.items():
-                tok[k] = v.to(self.device)
             with torch.no_grad():
                 feat = self.model.get_text_features(
-                    input_ids=tok["input_ids"], attention_mask=tok["attention_mask"], walk_type="short"
+                    input_ids=tok["input_ids"].to(self.device), walk_type="short"
                 )
             feats.append(feat)
         return F.normalize(torch.cat(feats, dim=0), p=2, dim=-1)
+
+    def encode_texts_walk(self, texts, walk_type="box", batch_size=32, max_length=None):
+        """按指定 walk_type（short/box/long）编码文本，返回原始（未归一化）特征。
+
+        max_length 默认跟随 walk_type：long -> 196，其余 -> 64。
+        """
+        texts = list(texts)
+        if max_length is None:
+            max_length = LONG_TEXT_MAX_LEN if walk_type == "long" else TEXT_MAX_LEN
+        feats = []
+        for i in range(0, len(texts), batch_size):
+            tok = self.tokenizer(texts[i:i + batch_size], max_length=max_length)
+            with torch.no_grad():
+                feat = self.model.get_text_features(
+                    input_ids=tok["input_ids"].to(self.device), walk_type=walk_type
+                )
+            feats.append(feat)
+        return torch.cat(feats, dim=0)
+
+    def image_dense_features(self, paths, batch_size=4):
+        """返回 (dense, valid)：dense (B,max_patches,H)，valid (B,max_patches) bool。
+
+        用于子句级 grounding：文本向量与每个 patch 向量算余弦取 max。
+        """
+        dense_list, valid_list = [], []
+        for i in range(0, len(paths), batch_size):
+            ims = [Image.open(p).convert("RGB") for p in paths[i:i + batch_size]]
+            pv, mask, shapes = preprocess_images(ims)
+            pv = pv.to(self.device); mask = mask.to(self.device); shapes = shapes.to(self.device)
+            with torch.no_grad():
+                dense = self.model.get_image_dense_feature(
+                    pixel_values=pv, pixel_attention_mask=mask, spatial_shapes=shapes
+                )
+            dense_list.append(dense)
+            valid_list.append(mask.bool())
+        return torch.cat(dense_list, dim=0), torch.cat(valid_list, dim=0)
 
 
 _load_lock = threading.Lock()

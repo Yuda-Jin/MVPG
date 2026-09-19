@@ -116,13 +116,12 @@ def dense_features(fg, img_path):
 
 
 def encode_text_walk(fg, texts, walk_type):
+    # 官方口径：tokenizer 只给 input_ids，get_text_features 不传 attention_mask
     texts = list(texts)
     tok = fg.tokenizer(texts)
-    for k, v in tok.items():
-        tok[k] = v.to(fg.device)
     with torch.no_grad():
         feat = fg.model.get_text_features(
-            input_ids=tok["input_ids"], attention_mask=tok["attention_mask"], walk_type=walk_type
+            input_ids=tok["input_ids"].to(fg.device), walk_type=walk_type
         )
     return feat  # (B, D)
 

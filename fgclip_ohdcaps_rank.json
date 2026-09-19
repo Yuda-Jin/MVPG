@@ -1,0 +1,86 @@
+{
+  "s_box|all": {
+    "n_caption": 19354,
+    "n_pair": 74793,
+    "argmin_acc": 0.5113671592435672,
+    "argmin_base": 0.21863925388904767,
+    "pairwise_acc": 0.8026954394127793
+  },
+  "s_box|dropF2": {
+    "n_caption": 13871,
+    "n_pair": 26267,
+    "argmin_acc": 0.6195660010092999,
+    "argmin_base": 0.3552507629827214,
+    "pairwise_acc": 0.7683405032931054
+  },
+  "s_short|all": {
+    "n_caption": 19354,
+    "n_pair": 74793,
+    "argmin_acc": 0.6441045778650408,
+    "argmin_base": 0.21863925388904767,
+    "pairwise_acc": 0.8522722714692551
+  },
+  "s_short|dropF2": {
+    "n_caption": 13871,
+    "n_pair": 26267,
+    "argmin_acc": 0.8262562180087953,
+    "argmin_base": 0.3552507629827214,
+    "pairwise_acc": 0.895420108881867
+  },
+  "s_swap_box|all": {
+    "n_caption": 19354,
+    "n_pair": 74793,
+    "argmin_acc": 0.19308670042368503,
+    "argmin_base": 0.21863925388904767,
+    "pairwise_acc": 0.524821841616194
+  },
+  "s_swap_box|dropF2": {
+    "n_caption": 13871,
+    "n_pair": 26267,
+    "argmin_acc": 0.3371782856318939,
+    "argmin_base": 0.3552507629827214,
+    "pairwise_acc": 0.5015037880229947
+  },
+  "s_swap_short|all": {
+    "n_caption": 19354,
+    "n_pair": 74793,
+    "argmin_acc": 0.3934587165443836,
+    "argmin_base": 0.21863925388904767,
+    "pairwise_acc": 0.6999050713302047
+  },
+  "s_swap_short|dropF2": {
+    "n_caption": 13871,
+    "n_pair": 26267,
+    "argmin_acc": 0.6331194578617259,
+    "argmin_base": 0.3552507629827214,
+    "pairwise_acc": 0.7608405984695625
+  },
+  "d_box|all": {
+    "n_caption": 19354,
+    "n_pair": 74793,
+    "argmin_acc": 0.4527746202335435,
+    "argmin_base": 0.21863925388904767,
+    "pairwise_acc": 0.7810623988875964
+  },
+  "d_box|dropF2": {
+    "n_caption": 13871,
+    "n_pair": 26267,
+    "argmin_acc": 0.5964241943623387,
+    "argmin_base": 0.3552507629827214,
+    "pairwise_acc": 0.7571858225149427
+  },
+  "d_short|all": {
+    "n_caption": 19354,
+    "n_pair": 74793,
+    "argmin_acc": 0.4040508422031621,
+    "argmin_base": 0.21863925388904767,
+    "pairwise_acc": 0.7495487545625927
+  },
+  "d_short|dropF2": {
+    "n_caption": 13871,
+    "n_pair": 26267,
+    "argmin_acc": 0.5834474803546968,
+    "argmin_base": 0.3552507629827214,
+    "pairwise_acc": 0.7487722237027449
+  }
+}

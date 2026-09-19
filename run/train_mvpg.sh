@@ -24,6 +24,10 @@ BETA=${BETA:-0.5}
 # （7B 训 7B、13B 训 13B），只使用对应的 REF*_WEIGHT；设为 0 可关闭（消融）
 REF7_WEIGHT=${REF7_WEIGHT:-0.5}
 REF13_WEIGHT=${REF13_WEIGHT:-0.5}
+# 奖励模式：rcgr=组级区域竞争（默认）；clause=子句级视觉支持阈值奖励（只训主图）
+REWARD_MODE=${REWARD_MODE:-rcgr}
+CLAUSE_WALK=${CLAUSE_WALK:-short}
+CLAUSE_THRESHOLD=${CLAUSE_THRESHOLD:-0.150}
 
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -36,6 +40,7 @@ echo "model : $MODEL_DIR"
 echo "data  : $DATA_DIR"
 echo "fgclip: $FGCLIP_DIR"
 echo "steps : $STEPS  groups/step: $GROUPS_PER_STEP  max_new_tokens: $MAXNEW"
+echo "reward: mode=$REWARD_MODE  clause_walk=$CLAUSE_WALK  clause_threshold=$CLAUSE_THRESHOLD"
 echo "================="
 
 $PY mvpg_run/run_mvpg.py \
@@ -53,5 +58,8 @@ $PY mvpg_run/run_mvpg.py \
     --beta "$BETA" \
     --ref7-weight "$REF7_WEIGHT" \
     --ref13-weight "$REF13_WEIGHT" \
+    --reward-mode "$REWARD_MODE" \
+    --clause-walk "$CLAUSE_WALK" \
+    --clause-threshold "$CLAUSE_THRESHOLD" \
     --log-interval 5 \
     --save-interval 50

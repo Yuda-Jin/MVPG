@@ -17,6 +17,12 @@ MVPG RL 训练（自研，不依赖 verl）。
         （含主图）预生成的 caption，区域级对齐；作为难负样本，要求策略 caption 比原
         模型 caption 更贴合图像（self-play / relative reward）。
 
+  --reward-mode clause  子句级视觉支持阈值奖励（替代 RCGR，只训主图）：
+        caption 按 `.,;` 切子句，每子句到 dense patch 查最大视觉支持 s（FG-CLIP
+        short walk，raw 余弦），s>=--clause-threshold 记 +1、否则 -1；优势经字符偏移
+        对齐映射到 token 区间，loss = -Σ_t adv_t · logπ(o_t)（逐 token REINFORCE）。
+        adv 非零均值 -> 全幻觉 caption 被整体压低，可直接压制幻觉。
+
 数据格式（image-dir 下每个子目录 = 一张主图的一组网格子图视角）：
     image-dir/
       neg_captions.json    # 组级总 json：{gid: ["缺席难负例1", ...]}（同时也是组索引，
@@ -41,6 +47,7 @@ import json
 import os
 import re
 import sys
+from bisect import bisect_left, bisect_right
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -192,6 +199,100 @@ def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
 
     reg_mean = reg_rows.mean().item() if reg_rows is not None else float("nan")
     return rewards, reg_mean
+
+
+# =============================================================================
+# 子句级 grounding reward（阈值型）
+# 对单图生成的 caption 按 `.,;` 切子句，每个子句到图中 dense patch 查询最大视觉
+# 支持 s（FG-CLIP short walk，raw 余弦），按阈值判优势：s>=t -> +1，否则 -> -1。
+# 优势再按「字符偏移对齐」映射回 token 区间，作为逐 token advantage。
+#
+# 与 RCGR 的关键差异：adv 非零均值（±1），整条 caption 的整体奖励被保留，因此
+# 全幻觉 caption 会被整体压低，可直接压制幻觉；而句内中心化（r=s-mean(s)）只做
+# caption 内信用再分配，无法整体压制幻觉。
+# =============================================================================
+
+_CLAUSE_TOKEN = re.compile(r"[^.,;]+")
+
+
+def clause_spans(caption):
+    """`.,;` 切分 caption，返回 [(原始片段, 起点, 终点)]，保留前导空格（供字符对齐）。
+
+    过滤 <3 词的碎片（与 data/clause_visual_support.py 口径一致）。注意：片段文本
+    保留原始形态（含前导空格），FG-CLIP 打分时另行 strip。
+    """
+    out = []
+    for m in _CLAUSE_TOKEN.finditer(caption):
+        frag = m.group(0)
+        if len(frag.split()) >= 3:
+            out.append((frag, m.start(), m.end()))
+    return out
+
+
+def compute_clause_adv(fg, img_path, caption, walk_type="short", threshold=0.150):
+    """单图 caption 的子句级阈值优势。
+
+    返回 (spans, advs, s_vals)：spans 为 [(片段, 起, 终)]；advs 为 ±1；s_vals 为
+    子句的 raw max-patch-sim（用于诊断阈值是否合适）。
+    """
+    spans = clause_spans(caption)
+    if not spans or not img_path:
+        return [], [], []
+    texts = [frag.strip() for frag, _, _ in spans]
+    dense, valid = fg.image_dense_features([img_path])
+    dense, valid = dense[0], valid[0]
+    tn = F.normalize(fg.encode_texts_walk(texts, walk_type=walk_type), p=2, dim=-1)
+    dn = F.normalize(dense, p=2, dim=-1)
+    sim = dn @ tn.T                                  # (P, N)
+    sim = sim.masked_fill(~valid.unsqueeze(1), -1e9)
+    s_vals = sim.max(dim=0).values.tolist()          # (N,) 每子句的 raw 最大视觉支持
+    advs = [1.0 if v >= threshold else -1.0 for v in s_vals]
+    return spans, advs, s_vals
+
+
+def map_clause_adv_to_tokens(tokenizer, resp_ids, caption, spans, advs):
+    """按字符偏移把子句优势映射到 token 区间，返回 (adv (len(resp_ids),), stats)。
+
+    长度取 resp_ids 实际宽度（而非 --max-new-tokens）：generate 在整批提前命中 EOS
+    时返回序列会短于 max_new，adv 必须与 logprob 的宽度严格一致。
+
+    做法：用「解码前缀长度」建立 token->字符右端点表 ends（ends[j] = 前 j+1 个
+    token 解码后的字符长度），子句 [a,b) 覆盖的 token 区间即
+        lo = #{j: ends[j] <= a}, hi = #{j: ends[j-1] < b}
+    与 caption 由同一 decode 产生，严格同源，规避「重新 tokenize + 子序列匹配」的
+    前导空格丢失、重复子句、往返不幂等等问题。
+    """
+    full = [int(t) for t in resp_ids if int(t) != tokenizer.pad_token_id]
+    idxs = [k for k, t in enumerate(resp_ids) if int(t) != tokenizer.pad_token_id]
+    adv = torch.zeros(len(resp_ids), dtype=torch.float32)
+    stats = {"n_clauses": 0, "n_matched": 0, "match_rate": 0.0, "coverage": 0.0,
+             "pos_frac": 0.0}
+    if not full:
+        return adv, stats
+
+    ends = [len(tokenizer.decode(full[:j + 1], skip_special_tokens=True))
+            for j in range(len(full))]
+    n_tok = len(full)
+    matched = 0
+    for (_, a, b), r_ in zip(spans, advs):
+        lo = bisect_right(ends, a)
+        hi = bisect_left(ends, b) + 1
+        lo, hi = max(0, min(lo, n_tok)), max(0, min(hi, n_tok))
+        if hi <= lo:
+            continue
+        adv[idxs[lo]: idxs[hi - 1] + 1] = r_
+        matched += 1
+
+    covered = int((adv != 0).sum().item())
+    n_clauses = len(spans)
+    stats.update(
+        n_clauses=n_clauses,
+        n_matched=matched,
+        match_rate=matched / n_clauses if n_clauses else 0.0,
+        coverage=covered / len(idxs) if idxs else 0.0,
+        pos_frac=(sum(1 for v in advs if v > 0) / n_clauses) if n_clauses else 0.0,
+    )
+    return adv, stats
 
 
 # =============================================================================
@@ -439,8 +540,13 @@ def train(args):
     print(f"  model  : {args.model_name}")
     print(f"  data   : {args.image_dir}")
     print(f"  device : {device}")
-    print(f"  RCGR   : alpha={args.alpha} beta={args.beta} neg_mode={args.neg_mode} "
-          f"use_main_image={args.use_main_image}")
+    print(f"  reward : mode={args.reward_mode}")
+    if args.reward_mode == "clause":
+        print(f"  clause : walk={args.clause_walk} threshold={args.clause_threshold} "
+              f"（只训主图，逐 token advantage=±1）")
+    else:
+        print(f"  RCGR   : alpha={args.alpha} beta={args.beta} neg_mode={args.neg_mode} "
+              f"use_main_image={args.use_main_image}")
     print(f"  batch  : groups_per_step={args.groups_per_step} reg_weight={args.reg_weight} "
           f"kl_weight={args.kl_weight}")
     print(f"  ref    : ref_key={ref_key}(auto，同基座) ref7_weight={args.ref7_weight} "
@@ -519,7 +625,12 @@ def train(args):
             g = groups[gcursor % len(groups)]
             gcursor += 1
             main_img, regions = resolve_group_images(args.image_dir, g["gid"])
-            if len(regions) < 2:
+            if args.reward_mode == "clause":
+                # 子句级奖励只用主图，不依赖网格子图
+                if not main_img:
+                    print(f"[skip] gid={g['gid']} 无主图，跳过")
+                    continue
+            elif len(regions) < 2:
                 print(f"[skip] gid={g['gid']} regions={len(regions)} < 2，跳过")
                 continue
             batch_raw.append((g, main_img, regions))
@@ -535,6 +646,18 @@ def train(args):
         qlen = query0.size(0)  # (L,) 单条 prompt 长度
         gen_pixels_list, row0 = [], 0
         for g, main_img, regions in batch_raw:
+            if args.reward_mode == "clause":
+                # 子句级奖励：只训主图单行（K=1），不使用区域竞争/负例/ref caption
+                metas.append({
+                    "gid": g["gid"], "main_img": main_img,
+                    "region_paths": [main_img], "neg_pool": [],
+                    "metric_main_path": None,
+                    "reward_paths": [main_img], "ref_captions": [],
+                    "row0": row0, "n_rows": 1, "K": 1,
+                })
+                row0 += 1
+                gen_pixels_list.append(process_image(image_processor, main_img))
+                continue
             region_paths = list(regions)
             if args.use_main_image and main_img:   # 可选：整图并入组内作为额外视角
                 region_paths.insert(0, main_img)
@@ -573,10 +696,27 @@ def train(args):
             r_ = r_[r_ != tokenizer.pad_token_id]
             captions_all.append(tokenizer.decode(r_, skip_special_tokens=True).strip())
 
-        # ---- 3) 逐组 RCGR 奖励 + 组内归一化 advantage（组间严格独立）----
+        # ---- 3) 逐组计算奖励 + advantage（组间严格独立）----
         for m in metas:
             caps = captions_all[m["row0"]: m["row0"] + m["n_rows"]]
             resp = responses_all[m["row0"]: m["row0"] + m["n_rows"]]
+
+            if args.reward_mode == "clause":
+                # 子句级阈值奖励：caption 用 decode(full) 的原始形态（不 strip），
+                # 与 map_clause_adv_to_tokens 的字符偏移表严格同源。
+                full = [int(t) for t in resp[0] if int(t) != tokenizer.pad_token_id]
+                caption = tokenizer.decode(full, skip_special_tokens=True)
+                spans, advs, s_vals = compute_clause_adv(
+                    fg, m["main_img"], caption,
+                    walk_type=args.clause_walk, threshold=args.clause_threshold)
+                adv_token, cstats = map_clause_adv_to_tokens(
+                    tokenizer, resp[0], caption, spans, advs)
+                adv_token = adv_token.to(device)
+                m.update(resp=resp, caps=caps, r=adv_token, reg_mean=float("nan"),
+                         adv_token=adv_token, r_main=float("nan"),
+                         clause_stats=cstats, clause_svals=s_vals)
+                continue
+
             # 参与奖励/advantage/梯度的是全部行（含主图行）；路径顺序与 gen_paths 一致：
             # use_main_image=True 时主图在 region_paths[0]，否则主图行在末尾。
             reward_paths = m["reward_paths"]
@@ -678,7 +818,11 @@ def train(args):
                 kl_val = (lp[main_idx] - lp_ref_main[0]).detach().sum().item()
             m["kl"] = kl_val
 
-            loss_g = -(m["adv"] * lp.sum(dim=1)).sum() / n_train
+            if args.reward_mode == "clause":
+                # 逐 token advantage：loss = -Σ_t adv_t · logπ(o_t)（pad 位 logp 恒 0）
+                loss_g = -(m["adv_token"].unsqueeze(0) * lp).sum() / n_train
+            else:
+                loss_g = -(m["adv"] * lp.sum(dim=1)).sum() / n_train
             if lp_ref_main is not None:
                 loss_g = loss_g + args.kl_weight * kl_main / n_train
             loss_g.backward()
@@ -707,11 +851,22 @@ def train(args):
             kl_str = f" kl={sum(kls) / len(kls):.4f}" if kls else ""
             r_main_str = f"{sum(r_mains) / len(r_mains):.4f}" if r_mains else "nan"
             deg_str = f" degenerate={n_degenerate}/{len(metas)}" if n_degenerate else ""
+            clause_str = ""
+            if args.reward_mode == "clause":
+                # 映射验收指标：match=子句成功映射比例（应≈1）；coverage=被覆盖的非 pad
+                # token 占比；pos_frac=判 +1 的子句占比（长期偏离 0.4~0.6 说明阈值失配）
+                cst = [m["clause_stats"] for m in metas]
+                n = len(cst)
+                clause_str = (
+                    f" match={sum(s['match_rate'] for s in cst) / n:.3f}"
+                    f" cov={sum(s['coverage'] for s in cst) / n:.3f}"
+                    f" ncl={sum(s['n_clauses'] for s in cst) / n:.2f}"
+                    f" pos_frac={sum(s['pos_frac'] for s in cst) / n:.3f}")
             print(
                 f"[{step}/{args.steps}] G={len(metas)} B={n_train} loss={loss_val:.4f} "
                 f"r_mean={rs.mean().item():.4f} r_min={rs.min().item():.4f} r_max={rs.max().item():.4f} "
                 f"r_std={sum(stds) / len(stds):.4f} "
-                f"r_main={r_main_str}{kl_str}{reg_str}{deg_str}"
+                f"r_main={r_main_str}{kl_str}{reg_str}{clause_str}{deg_str}"
             )
             # 采样输出写 log（不打印）：每步一组，含各视角 caption，便于诊断坍缩/退化
             captions_fp.write(f"===== step {step} =====\n")
@@ -765,6 +920,14 @@ def main():
                         "reward/advantage 仍组内计算；G 个组拼接为一个大 rollout batch，"
                         "前向反向按组累积梯度，显存占用与 G=1 相同）")
     p.add_argument("--lr", type=float, default=3e-4, help="投影层学习率")
+    p.add_argument("--reward-mode", choices=["rcgr", "clause"], default="rcgr",
+                   help="奖励模式：rcgr=组级区域竞争接地奖励（默认）；"
+                        "clause=子句级视觉支持阈值奖励（只训主图，逐 token advantage=±1）")
+    p.add_argument("--clause-walk", choices=["short", "box", "long"], default="short",
+                   help="子句级奖励的 FG-CLIP 文本 walk 类型（子句级标定推荐 short）")
+    p.add_argument("--clause-threshold", type=float, default=0.150,
+                   help="子句级奖励阈值：子句 max patch sim >= 阈值 记 +1，否则 -1。"
+                        "须用 raw s_short 口径（§8 的段落内相对值不可用）")
     p.add_argument("--alpha", type=float, default=1.0, help="RCGR 跨区域竞争项系数")
     p.add_argument("--beta", type=float, default=0.5,
                    help="RCGR 幻觉负样本基线项系数（整图级 neg_captions；设为 0 取消 β 项，消融）")
