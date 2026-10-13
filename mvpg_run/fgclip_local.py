@@ -113,20 +113,17 @@ class _SpTokenizer:
         self.eos_id = 1
 
     def __call__(self, texts, max_length=TEXT_MAX_LEN):
-        ids_list, attn_list = [], []
+        # 复刻官方 GemmaTokenizer：add_bos=False/add_eos=True -> ids + [eos]，
+        # 然后按 max_length 右截断、右填充（padding="max_length"）。
+        # 官方 tokenizer_config 的 model_input_names=["input_ids"]，默认不返回
+        # attention_mask，故此处只产出 input_ids（与 README get_text_features(**inputs) 一致）。
+        ids_list = []
         for t in texts:
             ids = self.sp.encode(str(t).lower(), out_type=int)  # README 要求 lower
-            # 与官方 tokenizer(...) 默认 add_special_tokens=True 一致：末尾加 eos
-            ids = ids[: max_length - 1] + [self.eos_id]
-            n = len(ids)
-            ids = ids + [self.pad_id] * (max_length - n)
-            attn = [1] * n + [0] * (max_length - n)
+            ids = (ids + [self.eos_id])[:max_length]
+            ids = ids + [self.pad_id] * (max_length - len(ids))
             ids_list.append(ids)
-            attn_list.append(attn)
-        return {
-            "input_ids": torch.tensor(ids_list, dtype=torch.long),
-            "attention_mask": torch.tensor(attn_list, dtype=torch.long),
-        }
+        return {"input_ids": torch.tensor(ids_list, dtype=torch.long)}
 
 
 # -----------------------------------------------------------------------------
@@ -193,8 +190,9 @@ class FGChip:
             for k, v in tok.items():
                 tok[k] = v.to(self.device)
             with torch.no_grad():
+                # 官方口径：只传 input_ids（不传 attention_mask），见 README get_text_features(**inputs)
                 feat = self.model.get_text_features(
-                    input_ids=tok["input_ids"], attention_mask=tok["attention_mask"], walk_type="short"
+                    input_ids=tok["input_ids"], walk_type="short"
                 )
             feats.append(feat)
         return F.normalize(torch.cat(feats, dim=0), p=2, dim=-1)
