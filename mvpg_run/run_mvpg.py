@@ -18,10 +18,14 @@ MVPG RL 训练（自研，不依赖 verl）。
         模型 caption 更贴合图像（self-play / relative reward）。
 
   --reward-mode clause  子句级视觉支持阈值奖励（替代 RCGR，只训主图）：
-        caption 按 `.,;` 切子句，每子句到 dense patch 查最大视觉支持 s（FG-CLIP
+        caption 切成「规范打分单元」后，每单元到 dense patch 查最大视觉支持 s（FG-CLIP
         short walk，raw 余弦），s>=--clause-threshold 记 +1、否则 -1；优势经字符偏移
         对齐映射到 token 区间，loss = -Σ_t adv_t · logπ(o_t)（逐 token REINFORCE）。
         adv 非零均值 -> 全幻觉 caption 被整体压低，可直接压制幻觉。
+        规范切分（见 clause_spans）：不直接采用模型输出的标点切分，而是「标点断句 +
+        长段强制按词再切 + 短段并回相邻段」——否则 ±1 阈值下「合并子句 / 不写标点」
+        是严格占优策略（段越少，max-patch-sim 越容易越过阈值，且能把低支撑内容藏进
+        同一段），策略会退化成 run-on 长句并把奖励架空成 self-imitation。
 
 数据格式（image-dir 下每个子目录 = 一张主图的一组网格子图视角）：
     image-dir/
@@ -62,10 +66,58 @@ from llava.mm_utils import tokenizer_image_token
 from llava.model import LlavaLlamaForCausalLM
 from utils.constants import DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX
 
-# ---------------- RCGR 奖励默认系数（可通过 CLI 覆盖做消融） ----------------
 FGCLIP_ROOT = str(ROOT / "models" / "fgclip2-base-patch16")
 
-# 生成 prompt（对每个子图视角提问；子图是网格 crop，非 mask 高亮图）
+# =============================================================================
+# 训练超参数（单一事实来源）
+#   调参只改本块：下方 argparse 的默认值全部引用这些常量，run/train_mvpg.sh 不再
+#   重复给值（只留路径 / 步数与 --reward-mode 等开关），避免两处默认值分叉。
+#   子句级奖励取值依据：阈值为「长度校正后 s_adj」的口径（见 HP_CLAUSE_LEN_MU），
+#   不再是 raw s_short 的绝对阈值；max_words=16 落在词数可分化性最优的
+#   10~20 词桶中部。
+# =============================================================================
+
+# ---- 优化 / 生成 / 日志 ----
+HP_LR = 1e-4              # 只训 mm_projector；1e-4 稳定，显著更大易坍缩
+HP_QUESTION = "Describe the image concisely."   # 训练 rollout 的提问
+HP_TEMPERATURE = 1.0
+HP_MAX_NEW_TOKENS = 128   # 生成上限（安全阀）：简洁提问下模型通常远早于此自然结束
+HP_MAX_GRAD_NORM = 1.0
+HP_STEPS = 5000           # 优化器更新次数（每步 HP_GROUPS_PER_STEP 个组，共 4848 组）
+HP_GROUPS_PER_STEP = 4
+HP_KL_WEIGHT = 0.1        # 对原模型（训练前 mm_projector）的 KL 正则，仅主图行；建议 0.05~0.2
+HP_BITS = 16
+HP_LOG_INTERVAL = 5
+HP_SAVE_INTERVAL = 50
+
+# ---- 奖励模式与 RCGR 系数 ----
+HP_REWARD_MODE = "rcgr"   # rcgr=组级区域竞争（默认）；clause=子句级视觉支持阈值奖励
+HP_ALPHA = 1.0            # RCGR 跨区域竞争项系数
+HP_BETA = 0.5             # RCGR 缺席负样本基线项系数（整图级；0 关闭）
+HP_REF7_WEIGHT = 0.5      # 原 7B caption 难负样本竞争项（7B 策略生效；<=0 关闭）
+HP_REF13_WEIGHT = 0.5     # 原 13B caption 难负样本竞争项（13B 策略生效；<=0 关闭）
+HP_NEG_MODE = "first"     # 缺席难负例池用法：first=池首条；worst=每区域取最难一条
+HP_REG_WEIGHT = 0.0       # 区域结构对齐正则（reward shaping；<=0 关闭）
+
+# ---- 子句级奖励（--reward-mode clause）----
+HP_CLAUSE_WALK = "short"       # FG-CLIP 文本 walk 类型（子句级标定推荐 short）
+HP_CLAUSE_THRESHOLD = -0.0251  # 长度校正后 s_adj >= 该值记 +1，否则 -1
+HP_CLAUSE_MAX_WORDS = 16       # 规范切分的打分单元词数上限
+# 长度校正表：打分单元词数上限 -> 该长度的 max-patch-sim 期望 mu(n)。
+# 打分用 s_adj = s_short - mu(n_words)：raw s_short 随词数单调上升
+# （corr(n_words, s_short)=+0.369），配合固定绝对阈值会让「把每个单元顶满
+# max_words」成为严格占优策略，策略因此退化成不写标点的 run-on 长句。
+# mu 取「桶内全体子句」均值：按构造使各长度期望收益平在 0，策略无法靠 padding
+# 长度薅奖励。刻意不用「桶内仅真实子句」均值——那样判别力更高（留出 F1 0.739 /
+# AUC 0.925 vs 0.664 / 0.888），但会重新引入随长度的正偏置，而长度正是策略手里的
+# 旋钮（且池中「长子句更易为幻觉」的相关性疑为标注注入过程的产物）。
+# 桶界与取值来自 clause_support_scores.jsonl 的 3~18 词池（校准/留出按 gid 奇偶
+# 切分，mu 只在校准集拟合）；越界（<3 词或 >18 词）就近 clamp。
+HP_CLAUSE_LEN_MU = ((5, 0.1479), (9, 0.1600), (15, 0.1688), (18, 0.1990))
+
+# 原模型 ref caption 生成用的 prompt（data/generate_model_captions.py 导入本常量）。
+# 刻意保留长句版：已落盘的 model_captions.json 是用它生成的，改动它会让新旧 ref 口径漂移。
+# 训练 rollout 的提问用上面的 HP_QUESTION（简洁版，抑制长句与被 max_new_tokens 截断）。
 DEFAULT_QUESTION = "Describe the image content in detail."
 
 # 原模型 caption 难负样本在 model_captions.json 里的 key（与 data/generate_model_captions.py
@@ -203,39 +255,108 @@ def compute_group_rewards(fg, region_paths, captions, neg_captions, device,
 
 # =============================================================================
 # 子句级 grounding reward（阈值型）
-# 对单图生成的 caption 按 `.,;` 切子句，每个子句到图中 dense patch 查询最大视觉
-# 支持 s（FG-CLIP short walk，raw 余弦），按阈值判优势：s>=t -> +1，否则 -> -1。
-# 优势再按「字符偏移对齐」映射回 token 区间，作为逐 token advantage。
+# 对单图生成的 caption 先做「规范化切分」（见 clause_spans），每个打分单元到图中
+# dense patch 查询最大视觉支持 s（FG-CLIP short walk，raw 余弦），按阈值判优势：
+# s>=t -> +1，否则 -> -1。优势再按「字符偏移对齐」映射回 token 区间，作为逐 token
+# advantage。
 #
 # 与 RCGR 的关键差异：adv 非零均值（±1），整条 caption 的整体奖励被保留，因此
 # 全幻觉 caption 会被整体压低，可直接压制幻觉；而句内中心化（r=s-mean(s)）只做
 # caption 内信用再分配，无法整体压制幻觉。
+#
+# 为什么必须「规范化」而不能直接采用模型输出的标点切分：±1 阈值 + max-patch 池化
+# 下，段数越少，max-patch-sim 越容易越过阈值，且低支撑内容可以藏进同一段被高支撑
+# 内容带着一起记 +1。于是「合并子句 / 不写标点」成为严格占优策略，策略退化成
+# run-on 长句，整条 caption 只产出一个分数并全记 +1（r_std=0，奖励被架空为
+# self-imitation）。规范切分把打分粒度从「模型手里」收回，使该逃逸路径失效。
 # =============================================================================
 
-_CLAUSE_TOKEN = re.compile(r"[^.,;]+")
+_CLAUSE_TOKEN = re.compile(r"[^.,;]+")   # 标点初切：`.,;` 为分隔符
+_WORD = re.compile(r"\S+")               # 词边界（用于长段再切 / 短段判定）
 
 
-def clause_spans(caption):
-    """`.,;` 切分 caption，返回 [(原始片段, 起点, 终点)]，保留前导空格（供字符对齐）。
+def _n_words(caption, a, b):
+    return len(_WORD.findall(caption, a, b))
 
-    过滤 <3 词的碎片（与 data/clause_visual_support.py 口径一致）。注意：片段文本
-    保留原始形态（含前导空格），FG-CLIP 打分时另行 strip。
+
+def _len_mu(n_words):
+    """打分单元词数 -> 该长度的 max-patch-sim 期望 mu(n)。
+
+    桶界见 HP_CLAUSE_LEN_MU；小于首桶或大于末桶的就近 clamp。
     """
-    out = []
-    for m in _CLAUSE_TOKEN.finditer(caption):
-        frag = m.group(0)
-        if len(frag.split()) >= 3:
-            out.append((frag, m.start(), m.end()))
-    return out
+    for hi, mu in HP_CLAUSE_LEN_MU:
+        if n_words <= hi:
+            return mu
+    return HP_CLAUSE_LEN_MU[-1][1]
 
 
-def compute_clause_adv(fg, img_path, caption, walk_type="short", threshold=0.150):
-    """单图 caption 的子句级阈值优势。
+def clause_spans(caption, max_words=16, min_words=3):
+    """规范化切分 caption，返回 [(原始片段, 起点, 终点)]（字符偏移均指向原 caption）。
 
-    返回 (spans, advs, s_vals)：spans 为 [(片段, 起, 终)]；advs 为 ±1；s_vals 为
-    子句的 raw max-patch-sim（用于诊断阈值是否合适）。
+    三步（不改写文本、只重划边界，故 span 可直接用于 map_clause_adv_to_tokens 的
+    字符对齐）：
+
+    1) 标点初切：按 `.,;` 切成原始片段；
+    2) 长段强制再切：> `max_words` 词的段按词边界切成若干 ≤ max_words 的连续窗口
+       ——拆掉「不写标点把整条 caption 折叠成一个打分单元」这条占优路径；
+    3) 短段并回邻居：< `min_words` 词的段并入前一段（不再丢弃），使打分单元普遍落在
+       `[min_words, max_words + min_words - 1]` 词——否则写一堆 `a. b. c.` 短碎片可
+       拿 adv=0 的零梯度逃逸口（旧实现是直接丢弃），而短单元本身也不可分化
+       （0~5 词桶 AUC 仅 0.473）。
+
+    片段文本保留原始形态（含首尾空白），FG-CLIP 打分时另行 strip。
     """
-    spans = clause_spans(caption)
+    caption = caption or ""
+    spans = [(m.start(), m.end()) for m in _CLAUSE_TOKEN.finditer(caption)
+             if m.group(0).split()]
+    if not spans:
+        return []
+
+    # 2) 长段按词边界强制再切（保留原字符跨度）
+    split = []
+    for a, b in spans:
+        words = list(_WORD.finditer(caption, a, b))
+        if len(words) <= max_words:
+            split.append((a, b))
+        else:
+            for i in range(0, len(words), max_words):
+                grp = words[i:i + max_words]
+                split.append((grp[0].start(), grp[-1].end()))
+
+    # 3) 短段并回邻居：避免 < min_words 的碎片单独打分（此前是直接丢弃，等于给了
+    #    「写一堆 a. b. c. 短碎片」的零梯度逃逸口）。封顶 cap 防止连续碎片链式合并
+    #    反而长成新的 run-on；同时保证长段再切的尾部残段被吸收（否则 17 词会切出
+    #    「16 + 1」并让 1 词残段单独打分）。
+    cap = max_words + min_words - 1
+    units = []
+    for a, b in split:
+        n = _n_words(caption, a, b)
+        if units:
+            la, lb = units[-1]
+            ln = _n_words(caption, la, lb)
+            if ln < min_words or (n < min_words and ln + n <= cap):
+                units[-1] = (la, b)
+                continue
+        units.append((a, b))
+
+    return [(caption[a:b], a, b) for a, b in units]
+
+
+def compute_clause_adv(fg, img_path, caption, walk_type="short", threshold=-0.0251,
+                       max_words=16):
+    """单图 caption 的子句级阈值优势（长度校正口径）。
+
+    打分单元 = clause_spans 的规范化切分，单元分数取
+        s_adj = s_short - mu(n_words)
+    其中 s_short 是该单元对图像 patch 的最大相似度，mu(n) 是该词数下的期望值
+    （见 HP_CLAUSE_LEN_MU）。扣掉 mu 后各长度的期望收益平在 0，「把每个单元顶满
+    max_words」不再有红利——raw s_short 随词数单调上升，配合固定绝对阈值会把
+    padding 变成严格占优策略，策略因此退化成不写标点的 run-on 长句。
+
+    返回 (spans, advs, s_vals)：spans 为 [(片段, 起, 终)]（规范化切分，见 clause_spans）；
+    advs 为 ±1；s_vals 为打分单元的 s_adj（用于诊断阈值是否合适）。
+    """
+    spans = clause_spans(caption, max_words=max_words)
     if not spans or not img_path:
         return [], [], []
     texts = [frag.strip() for frag, _, _ in spans]
@@ -245,7 +366,9 @@ def compute_clause_adv(fg, img_path, caption, walk_type="short", threshold=0.150
     dn = F.normalize(dense, p=2, dim=-1)
     sim = dn @ tn.T                                  # (P, N)
     sim = sim.masked_fill(~valid.unsqueeze(1), -1e9)
-    s_vals = sim.max(dim=0).values.tolist()          # (N,) 每子句的 raw 最大视觉支持
+    raw = sim.max(dim=0).values.tolist()             # (N,) 每单元 raw 最大视觉支持
+    s_vals = [v - _len_mu(_n_words(caption, a, b))
+              for v, (_, a, b) in zip(raw, spans)]   # (N,) 长度校正后
     advs = [1.0 if v >= threshold else -1.0 for v in s_vals]
     return spans, advs, s_vals
 
@@ -266,7 +389,7 @@ def map_clause_adv_to_tokens(tokenizer, resp_ids, caption, spans, advs):
     idxs = [k for k, t in enumerate(resp_ids) if int(t) != tokenizer.pad_token_id]
     adv = torch.zeros(len(resp_ids), dtype=torch.float32)
     stats = {"n_clauses": 0, "n_matched": 0, "match_rate": 0.0, "coverage": 0.0,
-             "pos_frac": 0.0}
+             "pos_frac": 0.0, "avg_words": 0.0}
     if not full:
         return adv, stats
 
@@ -291,6 +414,8 @@ def map_clause_adv_to_tokens(tokenizer, resp_ids, caption, spans, advs):
         match_rate=matched / n_clauses if n_clauses else 0.0,
         coverage=covered / len(idxs) if idxs else 0.0,
         pos_frac=(sum(1 for v in advs if v > 0) / n_clauses) if n_clauses else 0.0,
+        avg_words=(sum(len(frag.split()) for frag, _, _ in spans) / n_clauses)
+        if n_clauses else 0.0,
     )
     return adv, stats
 
@@ -542,8 +667,8 @@ def train(args):
     print(f"  device : {device}")
     print(f"  reward : mode={args.reward_mode}")
     if args.reward_mode == "clause":
-        print(f"  clause : walk={args.clause_walk} threshold={args.clause_threshold} "
-              f"（只训主图，逐 token advantage=±1）")
+        print(f"  clause : walk={args.clause_walk} threshold(校正后 s_adj)={args.clause_threshold} "
+              f"max_words={args.clause_max_words}（mu(n) 见 HP_CLAUSE_LEN_MU；逐 token advantage=±1）")
     else:
         print(f"  RCGR   : alpha={args.alpha} beta={args.beta} neg_mode={args.neg_mode} "
               f"use_main_image={args.use_main_image}")
@@ -708,7 +833,8 @@ def train(args):
                 caption = tokenizer.decode(full, skip_special_tokens=True)
                 spans, advs, s_vals = compute_clause_adv(
                     fg, m["main_img"], caption,
-                    walk_type=args.clause_walk, threshold=args.clause_threshold)
+                    walk_type=args.clause_walk, threshold=args.clause_threshold,
+                    max_words=args.clause_max_words)
                 adv_token, cstats = map_clause_adv_to_tokens(
                     tokenizer, resp[0], caption, spans, advs)
                 adv_token = adv_token.to(device)
@@ -854,13 +980,16 @@ def train(args):
             clause_str = ""
             if args.reward_mode == "clause":
                 # 映射验收指标：match=子句成功映射比例（应≈1）；coverage=被覆盖的非 pad
-                # token 占比；pos_frac=判 +1 的子句占比（长期偏离 0.4~0.6 说明阈值失配）
+                # token 占比；ncl=平均打分单元数；avgw=单元平均词数（长段已按
+                # --clause-max-words 强制再切，run-on 时 ncl 应随 avgw 一起受控）；
+                # pos_frac=判 +1 的单元占比（长期偏离 0.4~0.6 说明阈值失配）
                 cst = [m["clause_stats"] for m in metas]
                 n = len(cst)
                 clause_str = (
                     f" match={sum(s['match_rate'] for s in cst) / n:.3f}"
                     f" cov={sum(s['coverage'] for s in cst) / n:.3f}"
                     f" ncl={sum(s['n_clauses'] for s in cst) / n:.2f}"
+                    f" avgw={sum(s['avg_words'] for s in cst) / n:.1f}"
                     f" pos_frac={sum(s['pos_frac'] for s in cst) / n:.3f}")
             print(
                 f"[{step}/{args.steps}] G={len(metas)} B={n_train} loss={loss_val:.4f} "
@@ -912,50 +1041,56 @@ def main():
     p.add_argument("--model-name", required=True, help="LLaVA 模型路径")
     p.add_argument("--output-dir", default=str(ROOT / "output" / "mvpg"), help="checkpoint 输出目录")
     p.add_argument("--fgclip-root", default=FGCLIP_ROOT, help="FG-CLIP2 权重目录")
-    p.add_argument("--question", default=DEFAULT_QUESTION, help="生成 prompt")
-    p.add_argument("--steps", type=int, default=4848,
+    p.add_argument("--question", default=HP_QUESTION, help="训练 rollout 的生成 prompt")
+    p.add_argument("--steps", type=int, default=HP_STEPS,
                    help="训练步数（优化器更新次数；每步消耗 groups-per-step 个数据组）")
-    p.add_argument("--groups-per-step", type=int, default=4,
+    p.add_argument("--groups-per-step", type=int, default=HP_GROUPS_PER_STEP,
                    help="每次更新同时处理的数据组数（数据并行维度；组间独立，"
                         "reward/advantage 仍组内计算；G 个组拼接为一个大 rollout batch，"
                         "前向反向按组累积梯度，显存占用与 G=1 相同）")
-    p.add_argument("--lr", type=float, default=3e-4, help="投影层学习率")
-    p.add_argument("--reward-mode", choices=["rcgr", "clause"], default="rcgr",
+    p.add_argument("--lr", type=float, default=HP_LR, help="投影层学习率")
+    p.add_argument("--reward-mode", choices=["rcgr", "clause"], default=HP_REWARD_MODE,
                    help="奖励模式：rcgr=组级区域竞争接地奖励（默认）；"
                         "clause=子句级视觉支持阈值奖励（只训主图，逐 token advantage=±1）")
-    p.add_argument("--clause-walk", choices=["short", "box", "long"], default="short",
+    p.add_argument("--clause-walk", choices=["short", "box", "long"], default=HP_CLAUSE_WALK,
                    help="子句级奖励的 FG-CLIP 文本 walk 类型（子句级标定推荐 short）")
-    p.add_argument("--clause-threshold", type=float, default=0.150,
-                   help="子句级奖励阈值：子句 max patch sim >= 阈值 记 +1，否则 -1。"
-                        "须用 raw s_short 口径（§8 的段落内相对值不可用）")
-    p.add_argument("--alpha", type=float, default=1.0, help="RCGR 跨区域竞争项系数")
-    p.add_argument("--beta", type=float, default=0.5,
+    p.add_argument("--clause-threshold", type=float, default=HP_CLAUSE_THRESHOLD,
+                   help="子句级奖励阈值（长度校正口径）：s_adj = s_short - mu(n_words) >= 阈值"
+                        " 记 +1，否则 -1。mu(n) 见 HP_CLAUSE_LEN_MU（桶内全体均值，"
+                        "消除「顶满 max_words」的 padding 红利）")
+    p.add_argument("--clause-max-words", type=int, default=HP_CLAUSE_MAX_WORDS,
+                   help="子句级奖励规范切分的打分单元词数上限：标点初切后 > 该值的段按"
+                        "词边界强制再切（拆掉「不写标点/合并子句」的占优逃逸路径）。"
+                        "默认 16，落在子句可分化性最优的 10~20 词桶中部")
+    p.add_argument("--alpha", type=float, default=HP_ALPHA, help="RCGR 跨区域竞争项系数")
+    p.add_argument("--beta", type=float, default=HP_BETA,
                    help="RCGR 幻觉负样本基线项系数（整图级 neg_captions；设为 0 取消 β 项，消融）")
-    p.add_argument("--ref7-weight", type=float, default=0.5,
+    p.add_argument("--ref7-weight", type=float, default=HP_REF7_WEIGHT,
                    help="原模型(7B) caption 难负样本竞争项系数 gamma（区域级；"
                         "仅当训练策略为 7B 时生效，<=0 关闭）")
-    p.add_argument("--ref13-weight", type=float, default=0.5,
+    p.add_argument("--ref13-weight", type=float, default=HP_REF13_WEIGHT,
                    help="原模型(13B) caption 难负样本竞争项系数 gamma（区域级；"
                         "仅当训练策略为 13B 时生效，<=0 关闭）")
     p.add_argument("--ref-json", default="model_captions.json",
                    help="根级原模型 caption json（由 data/generate_model_captions.py 生成）")
-    p.add_argument("--kl-weight", type=float, default=0.1,
+    p.add_argument("--kl-weight", type=float, default=HP_KL_WEIGHT,
                    help="对原模型（训练前 mm_projector）的 KL 正则权重，仅主图行；<=0 关闭。"
                         "过大(>=1)会压死策略、奖励长期不涨，建议 0.05~0.2")
-    p.add_argument("--neg-mode", choices=["first", "worst"], default="first",
+    p.add_argument("--neg-mode", choices=["first", "worst"], default=HP_NEG_MODE,
                    help="缺席难负例池用法：first=固定取池首条；worst=逐区域取最难一条")
-    p.add_argument("--reg-weight", type=float, default=0.0,
+    p.add_argument("--reg-weight", type=float, default=HP_REG_WEIGHT,
                    help="区域结构对齐正则权重（reward shaping；<=0 关闭）")
     p.add_argument("--use-main-image", action="store_true",
                    help="把整图（下采样主图）并入组内作为额外视角参与 reward/优化")
-    p.add_argument("--temperature", type=float, default=1.0)
-    p.add_argument("--max-new-tokens", type=int, default=128)
-    p.add_argument("--max-grad-norm", type=float, default=1.0)
-    p.add_argument("--bits", type=int, default=16, choices=[4, 8, 16], help="量化位数（8GB 显存建议 4）")
+    p.add_argument("--temperature", type=float, default=HP_TEMPERATURE)
+    p.add_argument("--max-new-tokens", type=int, default=HP_MAX_NEW_TOKENS)
+    p.add_argument("--max-grad-norm", type=float, default=HP_MAX_GRAD_NORM)
+    p.add_argument("--bits", type=int, default=HP_BITS, choices=[4, 8, 16],
+                   help="量化位数（8GB 显存建议 4）")
     p.add_argument("--fp16", action="store_true", help="使用 fp16")
     p.add_argument("--bf16", action="store_true", help="使用 bf16")
-    p.add_argument("--log-interval", type=int, default=10)
-    p.add_argument("--save-interval", type=int, default=100)
+    p.add_argument("--log-interval", type=int, default=HP_LOG_INTERVAL)
+    p.add_argument("--save-interval", type=int, default=HP_SAVE_INTERVAL)
     args = p.parse_args()
     train(args)
 

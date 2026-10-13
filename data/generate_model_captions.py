@@ -12,7 +12,9 @@
         meta.json              # 逐组 meta（更新：替换 neg_captions + 写 model_captions）
 
 推理规则：
-  - 使用与训练一致的 prompt：DEFAULT_QUESTION = "Describe the image content in detail."
+  - 默认使用 `--question`（= run_mvpg.py 的 DEFAULT_QUESTION，长句版）：已落盘的
+    model_captions.json 就是用长句版生成的，保持默认值以免新旧 ref 口径漂移。
+    注意训练 rollout 已改用简洁版 HP_QUESTION，两边 prompt 不再一致（有意为之）。
   - 对每组的主图 + 全部子图（网格 crop）逐一推理，含主图。
   - 生成参数与训练 rollout 一致（do_sample、temperature=1.0、top_p=1.0、top_k=0）。
 
