@@ -25,6 +25,8 @@ MAXNEW=${MAXNEW:-128}
 REWARD_MODE=${REWARD_MODE:-rcgr}
 # KL 正则权重：留空则用 run_mvpg.py 的 HP_KL_WEIGHT 默认值；KL_WEIGHT=0 可关闭 KL 项
 KL_WEIGHT=${KL_WEIGHT:-}
+# 句级奖励的组内标准化：留空则用 HP_SENTENCE_NORM 默认值(std)放大奖励信号；SENTENCE_NORM=none 关闭
+SENTENCE_NORM=${SENTENCE_NORM:-}
 
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -50,4 +52,5 @@ $PY mvpg_run/run_mvpg.py \
     --max-new-tokens "$MAXNEW" \
     --bf16 \
     --reward-mode "$REWARD_MODE" \
+    ${SENTENCE_NORM:+--sentence-norm "$SENTENCE_NORM"} \
     ${KL_WEIGHT:+--kl-weight "$KL_WEIGHT"}

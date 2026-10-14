@@ -119,6 +119,7 @@ HP_CLAUSE_LEN_MU = ((5, 0.1479), (9, 0.1600), (15, 0.1688), (18, 0.1990))
 # ---- 句级奖励（--reward-mode sentence）----
 HP_SENTENCE_WALK = "short"      # FG-CLIP 文本 walk 类型（句级推荐 short）
 HP_SENTENCE_MIN_WORDS = 3       # 句子最小词数；更短的碎片并入相邻句，避免碎片各自占一个打分单元
+HP_SENTENCE_NORM = "std"        # 句级优势的组内标准化：std=(adv-0)/std(adv) 放大信号；none=原始 adv
 
 # 原模型 ref caption 生成用的 prompt（data/generate_model_captions.py 导入本常量）。
 # 刻意保留长句版：已落盘的 model_captions.json 是用它生成的，改动它会让新旧 ref 口径漂移。
@@ -444,11 +445,16 @@ def _ref_sentence_mean(fg, img_feat, ref_caption, walk_type="short", min_words=3
 
 
 def compute_sentence_adv(fg, img_path, caption, ref_captions=None, ref_key=None,
-                         walk_type="short", min_words=3):
-    """单图 caption 的句级连续优势：adv_i = s_glob(sent_i) - mu_ref。
+                         walk_type="short", min_words=3, norm="std"):
+    """单图 caption 的句级连续优势：adv_i = s_glob(sent_i) - mu_ref（可再组内标准化）。
 
     - s_glob：句子向量 × 整图全局特征（FG-CLIP pooler，方案B）的余弦。
     - mu_ref：参考模型（同基座）对同图 caption 的句级全图相似度均值；无参考时取 0。
+    - norm="std"：组内标准化 adv_i / std(adv)，放大奖励信号（原始 s_glob 量级仅 ~0.01）。
+      分母 std 对同图所有句计算（mu_ref 为常数，(adv-0)/std 等价于 (s_glob-mu_ref)/std(s_glob)）；
+      std≈0（run-on 整段合 1 句 / 各句无差异）或句数<2 时无法定义，优势置 0（无信号）。
+      clamp ±5：std 很小时放大后的极端值会把投影层推向坍缩。
+    - norm="none"：保留原始 adv（不做标准化）。
     返回 (spans, advs, s_vals, mu_ref)：spans 见 sentence_spans；advs 为连续句级奖励；
     s_vals 为各句 s_glob（诊断用）；mu_ref 为所用基线。
     """
@@ -462,6 +468,12 @@ def compute_sentence_adv(fg, img_path, caption, ref_captions=None, ref_key=None,
     mu_ref = _ref_sentence_mean(
         fg, img_feat, (ref_captions or {}).get(ref_key), walk_type, min_words)
     advs = [v - mu_ref for v in s_vals]
+    if norm == "std":
+        sd = float(torch.tensor(advs).std(unbiased=False)) if len(advs) >= 2 else 0.0
+        if sd > 1e-6:
+            advs = [max(-5.0, min(5.0, a / sd)) for a in advs]
+        else:
+            advs = [0.0] * len(advs)                                # 组内无差异/单句 -> 无信号
     return spans, advs, s_vals, mu_ref
 
 
@@ -763,7 +775,9 @@ def train(args):
               f"max_words={args.clause_max_words}（mu(n) 见 HP_CLAUSE_LEN_MU；逐 token advantage=±1）")
     elif args.reward_mode == "sentence":
         print(f"  sentence: walk={args.sentence_walk} min_words={args.sentence_min_words} "
-              f"（句号切句 -> 全图特征相似度 - 参考模型句级均值 mu_ref；逐 token advantage）")
+              f"norm={args.sentence_norm} "
+              f"（句号切句 -> 全图特征相似度 - 参考模型句级均值 mu_ref；逐 token advantage，"
+              f"norm=std 时再组内标准化放大信号）")
     else:
         print(f"  RCGR   : alpha={args.alpha} beta={args.beta} neg_mode={args.neg_mode} "
               f"use_main_image={args.use_main_image}")
@@ -953,7 +967,8 @@ def train(args):
                 spans, advs, s_vals, mu_ref = compute_sentence_adv(
                     fg, m["main_img"], caption,
                     ref_captions=m["ref_captions"], ref_key=ref_key,
-                    walk_type=args.sentence_walk, min_words=args.sentence_min_words)
+                    walk_type=args.sentence_walk, min_words=args.sentence_min_words,
+                    norm=args.sentence_norm)
                 adv_token, sstats = map_clause_adv_to_tokens(
                     tokenizer, resp[0], caption, spans, advs)
                 adv_token = adv_token.to(device)
@@ -1112,7 +1127,9 @@ def train(args):
                     f" pos_frac={sum(s['pos_frac'] for s in cst) / n:.3f}")
             elif args.reward_mode == "sentence":
                 # 句级诊断：nsen=平均句数；avgw=句平均词数（run-on 时 nsen 塌成 1）；
-                # mu_ref=各图参考模型句级均值（基线水平，随图/模型而定）
+                # mu_ref=各图参考模型句级均值（基线水平，随图/模型而定）；
+                # pos_frac=正优势句占比（norm=none 时受量纲影响，norm=std 后期望≈0.5，
+                # 长期贴近 0/1 说明 mu_ref 基线与策略自身的句子分布严重错位）
                 cst = [m["clause_stats"] for m in metas]
                 n = len(cst)
                 mus = [m["sentence_mu"] for m in metas if m["sentence_mu"] == m["sentence_mu"]]
@@ -1122,6 +1139,7 @@ def train(args):
                     f" cov={sum(s['coverage'] for s in cst) / n:.3f}"
                     f" nsen={sum(s['n_clauses'] for s in cst) / n:.2f}"
                     f" avgw={sum(s['avg_words'] for s in cst) / n:.1f}"
+                    f" pos_frac={sum(s['pos_frac'] for s in cst) / n:.3f}"
                     f" mu_ref={mu_str}")
             print(
                 f"[{step}/{args.steps}] G={len(metas)} B={n_train} loss={loss_val:.4f} "
@@ -1190,6 +1208,9 @@ def main():
     p.add_argument("--sentence-min-words", type=int, default=HP_SENTENCE_MIN_WORDS,
                    help="句级奖励的最小句词数：句号切句后 < 该值的碎片并入相邻句，"
                         "避免 'a. b. c.' 碎片各自占一个打分单元")
+    p.add_argument("--sentence-norm", choices=["std", "none"], default=HP_SENTENCE_NORM,
+                   help="句级优势的组内标准化：std=(adv-mu_ref)/std(adv) 放大奖励信号"
+                        "（原始 s_glob 量级仅 ~0.01，标准化后方差可比）；none=原始 adv")
     p.add_argument("--clause-walk", choices=["short", "box", "long"], default=HP_CLAUSE_WALK,
                    help="子句级奖励的 FG-CLIP 文本 walk 类型（子句级标定推荐 short）")
     p.add_argument("--clause-threshold", type=float, default=HP_CLAUSE_THRESHOLD,
