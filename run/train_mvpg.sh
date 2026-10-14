@@ -11,7 +11,7 @@ PY=/root/miniconda3/envs/mvpg/bin/python
 DATA_DIR=/root/autodl-tmp/data/SA1B_5_threshold
 MODEL_DIR=/root/autodl-tmp/cache/llava-v1.5-7b
 FGCLIP_DIR=/root/autodl-tmp/cache/fgclip2-base-patch16
-OUTPUT_DIR=/root/autodl-tmp/output/mvpg_ckpt
+OUTPUT_DIR=${OUTPUT_DIR:-/root/autodl-tmp/output/mvpg_ckpt}
 
 # ===== 规模 / 开关 =====
 # steps 为优化器更新次数；每步消耗 GROUPS_PER_STEP 个数据组（共 4848 组）
@@ -20,8 +20,11 @@ STEPS=${STEPS:-5000}
 GROUPS_PER_STEP=${GROUPS_PER_STEP:-4}
 # 建议先冒烟：STEPS=2 MAXNEW=8 bash run/train_mvpg.sh
 MAXNEW=${MAXNEW:-128}
-# 奖励模式：rcgr=组级区域竞争（默认）；clause=子句级视觉支持阈值奖励（只训主图）
+# 奖励模式：rcgr=组级区域竞争（默认）；clause=子句级视觉支持阈值奖励（只训主图）；
+# sentence=句级全图特征相似度 - 参考模型句级均值（只训主图）
 REWARD_MODE=${REWARD_MODE:-rcgr}
+# KL 正则权重：留空则用 run_mvpg.py 的 HP_KL_WEIGHT 默认值；KL_WEIGHT=0 可关闭 KL 项
+KL_WEIGHT=${KL_WEIGHT:-}
 
 export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -46,4 +49,5 @@ $PY mvpg_run/run_mvpg.py \
     --groups-per-step "$GROUPS_PER_STEP" \
     --max-new-tokens "$MAXNEW" \
     --bf16 \
-    --reward-mode "$REWARD_MODE"
+    --reward-mode "$REWARD_MODE" \
+    ${KL_WEIGHT:+--kl-weight "$KL_WEIGHT"}
