@@ -48,6 +48,61 @@ def test_attribute_quantity_and_taxonomy_objects_do_not_become_entities():
     assert set(by_entity(claims)) == {"dog", "chair"}
 
 
+@pytest.mark.parametrize("entity", [
+    "background", "foreground", "image", "photo", "picture", "scene", "view",
+    "area", "place", "location", "side", "left", "right", "front", "back",
+    "center", "top", "bottom", "distance", "middle", "position", "region",
+    "section", "corner",
+])
+def test_standalone_nonvisual_and_spatial_nodes_remain_auditable_but_unanchored(entity):
+    claim = build_object_claims(f"The {entity.upper()} is visible.", [
+        [entity, "is", "visible"],
+    ])[0]
+    assert claim["entity"] == entity
+    assert claim["graph_references"] == [{"triple_index": 0, "slot": "subject"}]
+    assert claim["alignment_reason"] == "nonvisual_or_spatial_reference"
+    assert claim["source_spans"] == claim["error_spans"] == []
+    assert claim["alignment_status"] == "unresolved"
+    assert claim["ambiguous"] is True and claim["label"] == "?" and claim["weight"] == 0.0
+
+
+def test_nonvisual_filter_keeps_physical_stuff_and_complete_compound_objects():
+    text = ("A picture frame rests on a side table near the ground. "
+            "The wall stands below the sky beside water and grass.")
+    triples = [[entity, "is", "visible"] for entity in (
+        "picture", "side", "picture frame", "side table", "ground", "wall", "sky", "water", "grass",
+    )]
+    before = copy.deepcopy(triples)
+    claims = by_entity(build_object_claims(text, triples))
+    assert triples == before
+    assert set(claims) == {triple[0] for triple in triples}
+    for entity in ("picture", "side"):
+        assert claims[entity]["alignment_reason"] == "nonvisual_or_spatial_reference"
+        assert claims[entity]["source_spans"] == []
+    for entity in ("picture frame", "side table", "ground", "wall", "sky", "water", "grass"):
+        claim = claims[entity]
+        assert claim["alignment_status"] == "exact_unique"
+        assert claim["source_spans"] == claim["error_spans"]
+        a, b = claim["source_spans"][0]
+        assert text[a:b] == entity
+
+
+def test_nonvisual_nodes_cannot_receive_either_visual_feedback_polarity():
+    from mvpg_run.claim_feedback.data import classify_claims
+    text = "A dog stands in the background near water."
+    item = response_record(text)
+    item["claims"] = build_object_claims(text, [["dog", "in", "background"],
+                                              ["background", "near", "water"]])
+    def scorer(image, texts):
+        assert set(texts) == {"dog", "water"}
+        return [0.9 if name == "dog" else 0.1 for name in texts]
+    verified = by_entity(classify_claims(item, scorer, 0.2, 0.8)["claims"])
+    assert verified["dog"]["label"] == "+" and verified["water"]["label"] == "-"
+    assert verified["background"]["label"] == "?"
+    assert verified["background"]["support_score"] is None
+    assert verified["background"]["alignment_reason"] == "nonvisual_or_spatial_reference"
+
+
 @pytest.mark.parametrize("text,entity,reason", [
     ("A dog rests. Another dog runs.", "dog", "repeated_entity_mention"),
     ("A dog rests.", "canine", "entity_not_in_source"),

@@ -53,6 +53,16 @@ _NON_ENTITIES = frozenset({
     "anybody", "something", "anything", "everything", "nothing", "none",
     "one", "another", "unknown", "n/a",
 })
+# Bare discourse/image containers and spatial referents are not independently
+# checkable object-existence claims. Match complete graph names only: physical
+# compounds such as "picture frame" or "side table" must remain eligible, as
+# must visible stuff such as ground, wall, sky, water and grass.
+_NONVISUAL_OR_SPATIAL_REFERENTS = frozenset({
+    "background", "foreground", "image", "photo", "picture", "scene", "view",
+    "area", "place", "location", "side", "left", "right", "front", "back",
+    "center", "top", "bottom", "distance", "middle", "position", "region",
+    "section", "corner",
+})
 _NEGATION = re.compile(
     r"\b(?:no|not|never|neither|nor|without|absent|missing|"
     r"lack(?:s|ed|ing)?|cannot|can['\u2019]t|isn['\u2019]t|aren['\u2019]t|"
@@ -138,8 +148,9 @@ def build_object_claims(response: str, triples: Sequence[Sequence[str]]) -> list
 
     This is an explicit lexical projection after the actual DiscoSG parser, not
     a claim that DiscoSG itself supplies anchors. Repeated, absent, pronominal,
-    negated, hedged and overlapping mentions receive no trainable source/error
-    spans. All original graph facts should also be retained by the caller.
+    negated, hedged, nonvisual/spatial and overlapping mentions receive no
+    trainable source/error spans. All graph entities remain in the returned
+    audit claims; original graph facts should also be retained by the caller.
     """
     if not isinstance(response, str):
         raise ValueError("response must be a string")
@@ -164,7 +175,9 @@ def build_object_claims(response: str, triples: Sequence[Sequence[str]]) -> list
             "graph_references": candidate["graph_references"],
             "alignment_status": "unresolved", "alignment_confidence": 0.0,
         }
-        if entity.casefold() in _NON_ENTITIES or not any(c.isalpha() for c in entity):
+        if entity.casefold() in _NONVISUAL_OR_SPATIAL_REFERENTS:
+            reason = "nonvisual_or_spatial_reference"
+        elif entity.casefold() in _NON_ENTITIES or not any(c.isalpha() for c in entity):
             reason = "non_entity_or_coreference_slot"
         else:
             mentions = _exact_mentions(response, entity)
