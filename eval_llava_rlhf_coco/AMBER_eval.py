@@ -7,6 +7,7 @@ import warnings
 import argparse
 import ast
 import re
+from functools import lru_cache
 nlp = None
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -45,9 +46,16 @@ def percentage(numerator, denominator):
     return numerator / denominator * 100 if denominator else 0.0
 
 
+@lru_cache(maxsize=8192)
+def word_doc(word):
+    # These Docs are read-only: cache the unchanged pipeline's result rather
+    # than rerunning spaCy for each pair in the noun/annotation comparison.
+    return nlp(word)
+
+
 def check_synonyms_word(word1, word2, similarity_score):
-    token1 = nlp(word1)
-    token2 = nlp(word2)
+    token1 = word_doc(word1)
+    token2 = word_doc(word2)
     similarity = token1.similarity(token2)
     return similarity > similarity_score
 
@@ -117,6 +125,7 @@ def main(args):
         raise ValueError("AMBER IDs must be unique valid annotation IDs")
     if dimension['g']:
         nlp = spacy.load("en_core_web_lg")
+        word_doc.cache_clear()
     invalid_discriminative = 0
     normalized_discriminative = 0
     discriminative_count = 0
