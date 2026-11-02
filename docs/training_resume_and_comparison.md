@@ -91,6 +91,21 @@ python run/compare_experiments.py \
 相同ID用于更新同一实验，原有其他实验会保留。裁判或协议变化需要新ID；
 部分评分不会静默覆盖完整记录。训练反馈来源与评测裁判分开登记。
 
+仅训练的运行也可登记，使用训练清单中已完成的实际更新数，目标步数单独展示：
+
+```bash
+python run/compare_experiments.py \
+  --training-only --training-manifest /path/to/run/train/manifest.json \
+  --run-id claim7b_train5000 --method claim_feedback --model llava-v1.5-7b \
+  --training-data 'SA1B fixed 256-record feedback pool' \
+  --feedback-source 'DiscoSG + FGCLIP' \
+  --output-dir output/experiment_comparison
+```
+
+这类记录的裁判为 `not_evaluated`，指标留空，状态区分训练中与训练完成未评测。
+同一ID可持续更新进度，但配置、数据来源变化或计数回退会被拒绝。
+后续评测应另用独立ID，保留训练记录；不能覆盖已有100步评测或复用它的分数。
+
 ## 本次验证记录（2026-11-02）
 
 - 离线全套209项检查通过；续训专项14项通过，涵盖随后补充的更新后审计失败保护。

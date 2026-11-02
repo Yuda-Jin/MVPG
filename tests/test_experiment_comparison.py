@@ -1,12 +1,13 @@
 """Result registries must preserve experiment identity, units and source data."""
 import copy
+import hashlib
 import json
 from pathlib import Path
 
 import pytest
 
 from run.compare_experiments import (REQUIRED_SCORE_STAGES, display_metric,
-    local_row, main, render_markdown, update_registry, upsert, validate_row)
+    local_row, main, render_markdown, training_row, update_registry, upsert, validate_row)
 
 
 def dump(path, value):
@@ -180,3 +181,135 @@ def test_cli_registers_current_and_keeps_previous_run(tmp_path, monkeypatch):
         assert main() == 0
     assert len(json.loads((out / "registry.json").read_text())["rows"]) == 2
     assert (out / "comparison.md").is_file()
+
+
+def training_manifest(tmp_path, *, updated=200, status="running", **overrides):
+    manifest = {"status": status, "pool": "/data/feedback.jsonl", "pool_sha256": "pool",
+        "pool_records": 256, "counts": {"attempted": updated + 16, "updated": updated, "skipped": 16},
+        "settings": {"mode": "modulated", "lr": .001, "max_updates": 5000, "epochs": 100},
+        "backend": {"model": "/cache/llava-v1.5-7b"}, "signature": {"lora_rank": 16},
+        "resume": {"source": "/original-100/final"},
+        "counts_at_start": {"attempted": 109, "updated": 100, "skipped": 9}}
+    manifest.update(overrides)
+    return dump(tmp_path / "training/manifest.json", manifest)
+
+
+def progress(path, **kwargs):
+    return training_row(path, run_id="ours-5000", method="claim_feedback", model="llava-v1.5-7b", **kwargs)
+
+
+def test_training_only_uses_actual_counts_and_never_inherits_scores(tmp_path):
+    path = training_manifest(tmp_path)
+    row = progress(path, training_data="SA1B fixed feedback pool", feedback_source="DiscoSG + FGCLIP")
+    assert row["steps"] == 200
+    assert row["protocol"]["training_target_updates"] == 5000
+    assert row["status"] == "training_running"
+    assert row["metrics"] == {} and row["judge"] == "not_evaluated"
+    assert row["method"] == "claim_feedback/modulated"
+    registry = update_registry(tmp_path / "table", entry())
+    old_rows = copy.deepcopy(registry["rows"])
+    registry = update_registry(tmp_path / "table", row)
+    assert len(registry["rows"]) == 20  # 18 references, original 100-step scores, new progress
+    assert registry["rows"][:-1] == old_rows
+    assert display_metric(registry["rows"][-1], "mmhal_avg_score") == "-"
+    text = render_markdown(registry)
+    assert "训练中·未评测" in text and "目标累计更新：5000" in text
+    assert "manifest.json" in text
+    with pytest.raises(ValueError, match="actual successful"):
+        progress(path, steps=5000)
+
+
+def test_training_progress_can_advance_to_final_without_protocol_drift(tmp_path):
+    path = training_manifest(tmp_path)
+    rows = [progress(path)]
+    path = training_manifest(tmp_path, updated=500, status="running")
+    rows = upsert(rows, progress(path))
+    assert rows[0]["steps"] == 500 and rows[0]["history"][-1]["steps"] == 200
+    path = training_manifest(tmp_path, updated=5000, status="running")
+    assert progress(path)["status"] == "training_running"  # final save still pending
+    path = training_manifest(tmp_path, updated=5000, status="complete", target_updates_reached=True)
+    rows = upsert(rows, progress(path))
+    assert rows[0]["status"] == "trained_not_evaluated" and rows[0]["metrics"] == {}
+    assert "训练完成·未评测" in render_markdown({"rows": rows})
+    training_manifest(tmp_path, updated=5000, status="running")
+    with pytest.raises(ValueError, match="cannot revert"):
+        upsert(rows, progress(path))
+
+
+@pytest.mark.parametrize("status,updated,reached,expected", [
+    ("complete", 4999, True, "incomplete"), ("complete", 5000, False, "incomplete"),
+    ("failed", 400, None, "failed"), ("interrupted", 400, None, "incomplete"),
+    (None, 5000, None, "incomplete")])
+def test_training_completion_requires_finished_job_and_actual_target(tmp_path, status, updated, reached, expected):
+    path = training_manifest(tmp_path, updated=updated, status=status, target_updates_reached=reached)
+    assert progress(path)["status"] == expected
+
+
+@pytest.mark.parametrize("change", [
+    {"settings": {"mode": "modulated", "lr": .002, "max_updates": 5000}},
+    {"signature": {"lora_rank": 32}}, {"pool_sha256": "different-pool"},
+    {"resume": {"source": "/different-start/final"}}])
+def test_training_configuration_cannot_change_under_same_id(tmp_path, change):
+    path = training_manifest(tmp_path)
+    old = progress(path)
+    training_manifest(tmp_path, updated=500, **change)
+    with pytest.raises(ValueError, match="changed protocol training_config_sha256"):
+        upsert([old], progress(path))
+
+
+def test_training_progress_cannot_decrease_or_replace_scored_run(tmp_path):
+    path = training_manifest(tmp_path, updated=500)
+    old = progress(path)
+    training_manifest(tmp_path, updated=400)
+    with pytest.raises(ValueError, match="decrease"):
+        upsert([old], progress(path))
+    for allow in (False, True):
+        with pytest.raises(ValueError, match="new run_id"):
+            upsert([entry("ours-5000")], old, allow_incomplete_update=allow)
+        with pytest.raises(ValueError, match="new run_id"):
+            upsert([old], entry("ours-5000"), allow_incomplete_update=allow)
+
+
+def test_training_manifest_hash_matches_the_single_parsed_snapshot(tmp_path, monkeypatch):
+    path = training_manifest(tmp_path)
+    payload = path.read_bytes()
+    real_read = Path.read_bytes
+    reads = []
+    def read_then_advance(self):
+        data = real_read(self)
+        if self == path:
+            reads.append(self)
+            training_manifest(tmp_path, updated=500)
+        return data
+    monkeypatch.setattr(Path, "read_bytes", read_then_advance)
+    row = progress(path)
+    assert len(reads) == 1 and row["steps"] == 200
+    assert row["source"]["training_manifest_sha256"] == hashlib.sha256(payload).hexdigest()
+
+
+@pytest.mark.parametrize("bad_counts", [
+    {"attempted": 200, "updated": 200, "skipped": 16},
+    {"attempted": 200, "updated": True, "skipped": 16},
+    {"updated": 200}])
+def test_training_requires_consistent_successful_update_evidence(tmp_path, bad_counts):
+    path = training_manifest(tmp_path, counts=bad_counts)
+    with pytest.raises(ValueError, match="count"):
+        progress(path)
+
+
+def test_cli_training_only_preserves_reference_and_scored_rows(tmp_path, monkeypatch):
+    out = tmp_path / "table"
+    update_registry(out, entry())
+    path = training_manifest(tmp_path)
+    argv = ["compare_experiments.py", "--training-only", "--training-manifest", str(path),
+        "--run-id", "ours-5000", "--method", "claim_feedback", "--model", "llava-v1.5-7b",
+        "--output-dir", str(out)]
+    monkeypatch.setattr("sys.argv", argv)
+    assert main() == 0
+    registry = json.loads((out / "registry.json").read_text(encoding="utf-8"))
+    assert len(registry["rows"]) == 20 and registry["rows"][-1]["metrics"] == {}
+    for extra in (["--summary", "any.json"], ["--judge", "deepseek-flash"]):
+        monkeypatch.setattr("sys.argv", argv + extra)
+        with pytest.raises(SystemExit) as caught:
+            main()
+        assert caught.value.code == 2

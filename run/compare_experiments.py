@@ -46,6 +46,12 @@ def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def read_json_snapshot(path):
+    """Bind parsed progress and its digest to one atomic manifest snapshot."""
+    payload = Path(path).read_bytes()
+    return json.loads(payload.decode("utf-8")), hashlib.sha256(payload).hexdigest()
+
+
 def file_hash(path):
     digest = hashlib.sha256()
     with Path(path).open("rb") as stream:
@@ -115,6 +121,11 @@ def validate_row(row):
             raise ValueError(f"{key} uses a 0..1 ratio, not a percentage")
     if not isinstance(row.get("protocol", {}), dict) or not isinstance(row.get("source", {}), dict):
         raise ValueError("protocol and source must be objects")
+    if row.get("protocol", {}).get("evaluation_status") == "not_requested":
+        if row["metrics"] or row["judge"] != "not_evaluated":
+            raise ValueError("Training-only rows must have empty metrics and judge not_evaluated")
+        if row["status"] not in ("training_running", "trained_not_evaluated", "failed", "incomplete"):
+            raise ValueError("Invalid training-only status")
     return row
 
 
@@ -125,14 +136,28 @@ def upsert(rows, incoming, *, allow_incomplete_update=False):
     for index, old in enumerate(result):
         if old["run_id"] != incoming["run_id"]:
             continue
+        training_only = incoming.get("protocol", {}).get("evaluation_status") == "not_requested"
+        was_training_only = old.get("protocol", {}).get("evaluation_status") == "not_requested"
+        if training_only != was_training_only:
+            raise ValueError("Training-only and evaluated records require a new run_id")
         for key in ("source_type", "method", "model", "judge"):
             if old[key] != incoming[key]:
                 raise ValueError(f"run_id {incoming['run_id']!r} already has a different {key}; use a new run_id")
-        for key in ("judge_thinking", "judge_endpoint", "batch_size", "sources_sha256", "adapter_sha256"):
+        for key in ("judge_thinking", "judge_endpoint", "batch_size", "sources_sha256", "adapter_sha256",
+                    "training_config_sha256"):
             previous = old.get("protocol", {}).get(key)
             current = incoming.get("protocol", {}).get(key)
             if previous is not None and current is not None and previous != current:
                 raise ValueError(f"run_id {incoming['run_id']!r} changed protocol {key}; use a new run_id")
+        if training_only:
+            if old.get("source", {}).get("training_manifest") != incoming.get("source", {}).get("training_manifest"):
+                raise ValueError("Training manifest changed; use a new run_id")
+            old_counts = old.get("protocol", {}).get("training_counts", {})
+            new_counts = incoming.get("protocol", {}).get("training_counts", {})
+            if any(new_counts.get(key, -1) < old_counts.get(key, 0) for key in ("attempted", "updated", "skipped")):
+                raise ValueError("Refusing to decrease recorded training progress")
+            if old["status"] == "trained_not_evaluated" and incoming["status"] != old["status"]:
+                raise ValueError("Completed training cannot revert to an unfinished status; use a new run_id")
         if old["status"] == "complete" and incoming["status"] != "complete" and not allow_incomplete_update:
             raise ValueError("Refusing to replace a complete run with an incomplete result; use a new run_id or --allow-incomplete-update")
         # Keep earlier snapshots if a completed/partial result is deliberately updated.
@@ -158,6 +183,71 @@ def _safe_endpoint(value):
     if parts.port:
         host += f":{parts.port}"
     return urlunsplit((parts.scheme, host, parts.path, "", ""))
+
+
+def training_row(training_manifest, *, run_id, method, model, steps=None,
+                 training_data=None, feedback_source=None):
+    """Register training progress without presenting it as benchmark evidence."""
+    path = Path(training_manifest).resolve()
+    manifest, digest = read_json_snapshot(path)
+    if not isinstance(manifest, dict):
+        raise ValueError("training manifest must be an object")
+    counts = manifest.get("counts")
+    if not isinstance(counts, dict):
+        raise ValueError("training manifest needs actual successful-update counts")
+    for key in ("attempted", "updated", "skipped"):
+        value = counts.get(key)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"training count {key} must be a nonnegative integer")
+    if counts["attempted"] != counts["updated"] + counts["skipped"]:
+        raise ValueError("training attempted count must equal updates plus skips")
+    actual = counts["updated"]
+    if steps is not None and steps != actual:
+        raise ValueError("steps must equal actual successful updates in training manifest")
+    settings = manifest.get("settings")
+    if not isinstance(settings, dict):
+        raise ValueError("training manifest needs settings")
+    target = settings.get("max_updates")
+    if target is not None and (isinstance(target, bool) or not isinstance(target, int) or target < 0):
+        raise ValueError("max_updates must be null or a nonnegative integer")
+    raw_status = manifest.get("status")
+    if raw_status == "running":
+        status = "training_running"
+    elif raw_status == "failed":
+        status = "failed"
+    elif raw_status == "complete" and manifest.get("target_updates_reached") is not False and (target is None or actual >= target):
+        status = "trained_not_evaluated"
+    else:
+        # A checkpoint alone is not evidence that a whole training job finished.
+        status = "incomplete"
+    pool = manifest.get("pool") if isinstance(manifest.get("pool"), dict) else {}
+    pool_sha = manifest.get("pool_sha256", pool.get("sha256"))
+    pool_records = manifest.get("pool_records", pool.get("records"))
+    identity = {"settings": settings, "pool_sha256": pool_sha, "pool_records": pool_records,
+                "backend": manifest.get("backend"), "signature": manifest.get("signature"),
+                "resume": manifest.get("resume", manifest.get("resume_info")),
+                "counts_at_start": manifest.get("counts_at_start"),
+                "started_utc": manifest.get("started_utc"),
+                "protocol": manifest.get("protocol"),
+                "checkpoint_step_unit": manifest.get("checkpoint_step_unit")}
+    config_digest = hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":"),
+        ensure_ascii=False, allow_nan=False).encode("utf-8")).hexdigest()
+    if method == "claim_feedback" and settings.get("mode"):
+        method += "/" + str(settings["mode"])
+    protocol = {"evaluation_status": "not_requested", "directly_comparable_to_paper": False,
+        "training_status": raw_status, "training_target_updates": target,
+        "training_settings": settings, "training_counts": counts,
+        "training_pool_sha256": pool_sha, "training_pool_records": pool_records,
+        "training_config_sha256": config_digest,
+        "comparability_note": "Training progress only; benchmark metrics have not been measured for this run."}
+    if training_data:
+        protocol["training_data"] = training_data
+    if feedback_source:
+        protocol["training_feedback_reported"] = feedback_source
+    return validate_row({"run_id": run_id, "source_type": "local_run", "method": method,
+        "model": model, "steps": actual, "judge": "not_evaluated", "status": status,
+        "metrics": {}, "protocol": protocol,
+        "source": {"training_manifest": str(path), "training_manifest_sha256": digest}})
 
 
 def local_row(summary_path, *, run_id, method, model, judge, steps=None,
@@ -198,7 +288,7 @@ def local_row(summary_path, *, run_id, method, model, judge, steps=None,
         source.update(evaluation_manifest=str(Path(evaluation_manifest).resolve()),
                       evaluation_manifest_sha256=file_hash(evaluation_manifest))
     if training_manifest is not None:
-        manifest = read_json(training_manifest)
+        manifest, manifest_digest = read_json_snapshot(training_manifest)
         actual = manifest.get("counts", {}).get("updated")
         if actual is not None:
             if steps is not None and steps != actual:
@@ -213,7 +303,7 @@ def local_row(summary_path, *, run_id, method, model, judge, steps=None,
         if method == "claim_feedback" and mode:
             method += "/" + str(mode)
         source.update(training_manifest=str(Path(training_manifest).resolve()),
-                      training_manifest_sha256=file_hash(training_manifest))
+                      training_manifest_sha256=manifest_digest)
     # Prefer original 96 judgments over two-decimal log output when available.
     if mmhal_reviews is None and summary.get("model_suffix"):
         candidate = summary_path.parent / "mmhal_bench/review" / f"review-file-{summary['model_suffix']}.jsonl"
@@ -310,7 +400,10 @@ def render_markdown(registry):
                     budget = f"{protocol['training_samples_reported']:,}（原报）"
                 elif protocol.get("training_pool_records") is not None:
                     budget = f"回答池 {protocol['training_pool_records']}"
-                status = "论文原报" if kind == "paper_reported" else "已完成" if row["status"] == "complete" else "未完成"
+                status = "论文原报" if kind == "paper_reported" else {
+                    "complete": "已完成", "training_running": "训练中·未评测",
+                    "trained_not_evaluated": "训练完成·未评测", "failed": "训练失败·未评测",
+                }.get(row["status"], "未完成")
                 values = [row["_table_label"], budget, protocol.get("training_feedback_reported"), row.get("steps"), status]
                 lines.append("| " + " | ".join(_cell(value) for value in values) + " |")
             lines += ["", "生成式幻觉指标：", "", *_table(group, GENERATIVE_COLUMNS),
@@ -321,15 +414,20 @@ def render_markdown(registry):
                     note = protocol.get("provenance_note", "论文报告")
                     lines.append(f"- [{row['_ref']}] {_cell(row['method'])}：表 {source.get('table', '-')}，PDF 第 {source.get('pdf_page', '-')} 页；{_cell(note)}。裁判：{_cell(row['judge'])}。")
                 else:
-                    lines += [f"- [{row['_ref']}] 实验 ID：`{_cell(row['run_id'])}`；裁判：`{_cell(row['judge'])}`。",
-                        f"  数据：{_cell(protocol.get('training_data'))}。评测 batch 设置：{_cell(protocol.get('batch_size'))}；thinking：{_cell(protocol.get('judge_thinking'))}；AMBER 解析：{_cell(protocol.get('amber_yes_no_parsing'))}；ObjectHal 提取：{_cell(protocol.get('object_hal_scoring'))}。"]
+                    training_only = protocol.get("evaluation_status") == "not_requested"
+                    lines += [f"- [{row['_ref']}] 实验 ID：`{_cell(row['run_id'])}`；裁判：`{_cell(row['judge'])}`。"]
+                    if training_only:
+                        lines.append(f"  数据：{_cell(protocol.get('training_data'))}。本次仅训练，尚未进行 benchmark 评测；目标累计更新：{_cell(protocol.get('training_target_updates'))}。")
+                    else:
+                        lines.append(f"  数据：{_cell(protocol.get('training_data'))}。评测 batch 设置：{_cell(protocol.get('batch_size'))}；thinking：{_cell(protocol.get('judge_thinking'))}；AMBER 解析：{_cell(protocol.get('amber_yes_no_parsing'))}；ObjectHal 提取：{_cell(protocol.get('object_hal_scoring'))}。")
                     counts = protocol.get("training_counts") or {}
                     if counts:
                         lines.append(f"  训练计数：尝试 {counts.get('attempted', '-')}、实际更新 {counts.get('updated', '-')}、跳过 {counts.get('skipped', '-')}。")
                     settings = protocol.get("training_settings") or {}
                     if settings:
                         lines.append(f"  训练设置：mode={_cell(settings.get('mode'))}，lr={_cell(settings.get('lr'))}，更新范数上限={_cell(settings.get('max_update_norm'))}，seed={_cell(settings.get('seed'))}。")
-                    lines.append(f"  证据：`{_cell(Path(source.get('summary', '-')).name)}`；完整来源与设置见 registry.json 的 `{_cell(row['run_id'])}` 记录。")
+                    evidence = source.get("training_manifest") if training_only else source.get("summary")
+                    lines.append(f"  证据：`{_cell(Path(evidence or '-').name)}`；完整来源与设置见 registry.json 的 `{_cell(row['run_id'])}` 记录。")
     return "\n".join(lines) + "\n"
 
 
@@ -365,7 +463,9 @@ def update_registry(output_dir, incoming=None, *, reference_file=DEFAULT_REFEREN
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--summary")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--summary")
+    mode.add_argument("--training-only", action="store_true", help="Record actual training progress with no benchmark scores")
     parser.add_argument("--run-id")
     parser.add_argument("--method")
     parser.add_argument("--model")
@@ -382,12 +482,22 @@ def main():
     args = parser.parse_args()
     if args.summary and not all((args.run_id, args.method, args.model, args.judge)):
         parser.error("--summary requires --run-id, --method, --model and --judge")
+    if args.training_only:
+        if not all((args.run_id, args.method, args.model, args.training_manifest)):
+            parser.error("--training-only requires --run-id, --method, --model and --training-manifest")
+        if args.judge is not None or args.evaluation_manifest is not None or args.mmhal_reviews is not None:
+            parser.error("--training-only does not accept evaluation or judge arguments")
     try:
-        incoming = local_row(args.summary, run_id=args.run_id, method=args.method,
-            model=args.model, judge=args.judge, steps=args.steps,
-            training_manifest=args.training_manifest, evaluation_manifest=args.evaluation_manifest,
-            mmhal_reviews=args.mmhal_reviews, training_data=args.training_data,
-            feedback_source=args.feedback_source) if args.summary else None
+        if args.training_only:
+            incoming = training_row(args.training_manifest, run_id=args.run_id, method=args.method,
+                model=args.model, steps=args.steps, training_data=args.training_data,
+                feedback_source=args.feedback_source)
+        else:
+            incoming = local_row(args.summary, run_id=args.run_id, method=args.method,
+                model=args.model, judge=args.judge, steps=args.steps,
+                training_manifest=args.training_manifest, evaluation_manifest=args.evaluation_manifest,
+                mmhal_reviews=args.mmhal_reviews, training_data=args.training_data,
+                feedback_source=args.feedback_source) if args.summary else None
         registry = update_registry(args.output_dir, incoming, reference_file=args.reference_file,
                                    allow_incomplete_update=args.allow_incomplete_update)
     except (ValueError, OSError, RuntimeError) as error:
