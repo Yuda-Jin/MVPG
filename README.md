@@ -1,3 +1,15 @@
+# MVPG: claim-level visual feedback experiments
+
+当前 story 的独立实现入口为 `python -m mvpg_run.claim_feedback`：生成回答 →
+DiscoSG 对象存在性申明 → 冻结 FG-CLIP2 弱反馈 → 原文 token 对齐 →
+回答内正负梯度调制 → LLM-only LoRA 更新。保留原 MVPG 训练入口。
+
+使用方法、监督条件、五组机制对照及适用边界见
+[声明级视觉反馈说明](mvpg_run/claim_feedback/README.md)。仅验证了核心机制与离线接口，
+真实 LLaVA/DiscoSG 权重上的训练及 benchmark 结果仍待验证。
+
+本仓库原始 OPA-DPO 来源和环境说明保留如下。
+
 # OPA-DPO (On-Policy Alignment Direct Preference Optimization)
 
 [![arXiv](https://img.shields.io/badge/arXiv-PDF-red)](https://arxiv.org/abs/2501.09695)

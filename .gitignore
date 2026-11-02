@@ -31,3 +31,17 @@ data/sa1b_boxes/
 data/bbox_images/
 models/
 third_party/
+
+# Local environments, test/tool caches and generated adapter artifacts
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.env
+.env.*
+!.env.example
+adapter_model.bin
+adapter_model.safetensors
+*.tmp
