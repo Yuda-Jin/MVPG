@@ -68,8 +68,14 @@ cp -R llava_setup/LLaVA/llava ./llava
 `run/eval_all_metrics.sh` 用于当前 LoRA 检查点的评估，新训练生成的 `final/` 可直接作为适配器目录。设置 `MODEL_BASE`、`MODEL_LORA_BASE`、`MODEL_SUFFIX` 和图像路径环境变量后运行；旧 projector 专用启动器已移除。适配器缺失会明确报错，避免误将底模当作训练结果。`run/summarize_eval_results.py` 和评估目录内的汇总脚本继续保留。
 
 路径变量包括 `IMAGE_FOLDER_LB`、`IMAGE_FOLDER_POPE`、`IMAGE_DIR_AMBER` 和 `MMHAL_DATA_ROOT`。
-`RUN_GPT=0` 只生成回答并计算 POPE/AMBER 本地指标；默认 `RUN_GPT=1` 还需要
-`OPENAI_API_KEY` 及 `ANNOTATION_FILE`，会调用外部评分服务。评估器保留 `--use-qlora`/
+默认 `POPE_CAT=all` 运行三类各 3000 题，AMBER 运行全部 15220 题。
+`RUN_GPT=0` 生成全部回答并计算本地指标（含提供 COCO 标注时的 ObjectHal）；默认 `RUN_GPT=auto`，
+有 `OPENAI_API_KEY` 时调用外部裁判，缺少配置则单独记录待评分阶段，不中断其余评测。
+`ANNOTATION_FILE` 指向 COCO 标注目录。启动器自动读取被 Git 忽略的 `.env`，可参考 `.env.example`；
+`GPT_MODEL` 保存实际裁判名称，使用替代裁判的分数不能直接当作原 GPT-4 结果比较。
+`EVAL_BATCH_SIZE` 默认 1，等长分桶支持批量推理；数值精度及批量设置应在底模与各实验间保持一致。
+完整阶段会校验数量、ID 和来源后复用，独立日志及汇总记录失败、缺失与完成状态。
+评估器保留 `--use-qlora`/
 `--qlora-path` 参数名以兼容原接口，当前加载的是普通 BF16 LoRA。
 
 图片数据、COCO 标注、部分外部数据和实际权重需要另行准备。GPT 评分通过环境变量配置服务与凭据；运行前检查路径与参数。原始图片和本地权重作为运行资源保留，不是当前分支追踪的实验代码。生成成功和弱反馈统计不能替代 benchmark 指标，也不能证明一般能力保持。

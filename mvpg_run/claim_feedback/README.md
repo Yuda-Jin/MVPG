@@ -69,6 +69,10 @@ DiscoSG 使用[官方仓库](https://github.com/ShaoqLin/DiscoSG)，适配参考
 还需从 `sqlinn/DiscoSG-Refiner-Large` 取得 `model_info.json` 和 tokenizer 文件，组成完整本地 refiner。
 完整 `Large` 检查点的封装键与当前加载器不同，不能直接替代 `t5-only`。
 离线运行时将 `model_info.json` 的 `base_model_name` 指向本地同一 tokenizer，并保留上游文件和修改记录。
+在 transformers 4.34 / tokenizers 0.14 环境，新 refiner 的 tokenizer JSON 可能不兼容。
+可以用 `AutoTokenizer.from_pretrained(refiner, from_slow=True)` 从官方 SentencePiece
+重建 fast tokenizer，保存到独立目录，再通过独立 refiner 配置指向它。
+删除步骤需要字符偏移，不能直接换成不支持偏移的 slow tokenizer；应核对完整词表 ID、特殊标记和实际文本分词。
 可在独立 DiscoSG 环境执行分解，以 JSONL 交接。
 其图没有原文偏移；本实现只接受唯一、明确、非否定/非不确定的实体提及，并保留完整图用于审计。
 属性与关系不会冒充已支持的训练类型。已有来源可靠的声明可直接写入相同 schema，跳过 `decompose`。
