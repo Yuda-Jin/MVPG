@@ -18,8 +18,12 @@ from .data import align_claims, read_jsonl
 from .optimization import masked_objectives, response_step
 
 
+class TrainingTargetNotReached(RuntimeError):
+    """The configured data/attempt budget ended before the update target."""
+
+
 def validate_training_options(*, mode, lr, alpha, beta, max_update_norm,
-                              epochs, max_steps, checkpoint_every):
+                              epochs, max_steps, checkpoint_every, max_updates=None):
     from .optimization import MODES
     if mode not in MODES:
         raise ValueError(f"Unknown training mode: {mode}")
@@ -30,8 +34,9 @@ def validate_training_options(*, mode, lr, alpha, beta, max_update_norm,
         if value < 0 or (positive and value == 0):
             raise ValueError(f"Invalid {name}: {value}")
     for name, value, minimum in (("epochs", epochs, 1), ("max_steps", max_steps, 1),
+                                  ("max_updates", max_updates, 1),
                                   ("checkpoint_every", checkpoint_every, 0)):
-        if name == "max_steps" and value is None:
+        if name in ("max_steps", "max_updates") and value is None:
             continue
         if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
             raise ValueError(f"{name} must be an integer >= {minimum}")
@@ -71,17 +76,20 @@ def provenance():
 
 def train_pool(backend, input_path, output_dir, *, mode="modulated", lr=1e-3,
                alpha=1.0, beta=1.0, max_update_norm=1e-3, epochs=1,
-               max_steps=None, checkpoint_every=0, seed=42, image_root=None,
+               max_steps=None, max_updates=None, checkpoint_every=0, seed=42, image_root=None,
                allow_whole_claim_negative=False, audit_loss_change=False, config=None):
     """Fixed ordered pool, no batches/momentum/implicit refreshed supervision.
 
     Alignment failures skip the response and are counted; missing images, invalid
     model interfaces and numerical errors fail the run with a manifest reason.
     ``max_steps`` counts attempted responses, including explicit skips.
+    ``max_updates`` counts only successful parameter updates. If the epochs or
+    attempt cap end before this requested target, the current adapter is saved,
+    the manifest is marked incomplete, and TrainingTargetNotReached is raised.
     """
     validate_training_options(mode=mode, lr=lr, alpha=alpha, beta=beta,
         max_update_norm=max_update_norm, epochs=epochs, max_steps=max_steps,
-        checkpoint_every=checkpoint_every)
+        checkpoint_every=checkpoint_every, max_updates=max_updates)
     records = list(read_jsonl(input_path))
     if not records:
         raise ValueError("Feedback pool is empty")
@@ -90,7 +98,8 @@ def train_pool(backend, input_path, output_dir, *, mode="modulated", lr=1e-3,
     root.mkdir(parents=True, exist_ok=False)
     settings = dict(mode=mode, lr=lr, alpha=alpha, beta=beta,
                     max_update_norm=max_update_norm, epochs=epochs,
-                    max_steps=max_steps, checkpoint_every=checkpoint_every,
+                    max_steps=max_steps, max_updates=max_updates,
+                    checkpoint_every=checkpoint_every,
                     seed=seed, image_root=str(Path(image_root or ".").resolve()),
                     allow_whole_claim_negative=allow_whole_claim_negative,
                     audit_loss_change=audit_loss_change)
@@ -109,6 +118,9 @@ def train_pool(backend, input_path, output_dir, *, mode="modulated", lr=1e-3,
             stop = False
             for epoch in range(epochs):
                 for record in records:
+                    if max_updates is not None and counts["updated"] >= max_updates:
+                        stop = True
+                        break
                     if max_steps is not None and counts["attempted"] >= max_steps:
                         stop = True
                         break
@@ -155,7 +167,20 @@ def train_pool(backend, input_path, output_dir, *, mode="modulated", lr=1e-3,
                 if stop:
                     break
         backend.save(root / "final")
-        manifest.update(status="complete", counts=dict(counts), reasons=dict(reasons))
+        target_reached = None if max_updates is None else counts["updated"] >= max_updates
+        stop_reason = ("max_updates" if target_reached else
+                       "max_steps" if max_steps is not None and counts["attempted"] >= max_steps
+                       else "pool_exhausted")
+        manifest.update(status="complete", counts=dict(counts), reasons=dict(reasons),
+                        target_updates_reached=target_reached, stop_reason=stop_reason)
+        if target_reached is False:
+            raise TrainingTargetNotReached(
+                f"Requested {max_updates} actual updates, completed {counts['updated']} "
+                f"after {counts['attempted']} attempts ({stop_reason}); "
+                f"partial adapter saved in {root / 'final'}")
+    except TrainingTargetNotReached as exc:
+        manifest.update(status="incomplete", error=f"{type(exc).__name__}: {exc}")
+        raise
     except Exception as exc:
         manifest.update(status="failed", counts=dict(counts), reasons=dict(reasons),
                         error=f"{type(exc).__name__}: {exc}")

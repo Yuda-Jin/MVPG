@@ -73,7 +73,9 @@ def build_parser():
     train.add_argument("--max-update-norm", type=float, default=1e-3,
                        help="L2 cap on actual parameter delta, not raw gradient norm")
     train.add_argument("--epochs", type=int, default=1)
-    train.add_argument("--max-steps", type=int)
+    train.add_argument("--max-steps", type=int, help="Cap attempted responses, including skipped feedback")
+    train.add_argument("--max-updates", type=int,
+                       help="Stop after this many successful parameter updates; fail if the data/attempt budget ends first")
     train.add_argument("--checkpoint-every", type=int, default=0)
     train.add_argument("--seed", type=int, default=42)
     train.add_argument("--lora-rank", type=int, default=16)
@@ -208,7 +210,8 @@ def run(args):
             raise FileExistsError("Training output directory already exists; choose a new run directory")
         validate_training_options(mode=args.mode, lr=args.lr, alpha=args.alpha,
             beta=args.beta, max_update_norm=args.max_update_norm, epochs=args.epochs,
-            max_steps=args.max_steps, checkpoint_every=args.checkpoint_every)
+            max_steps=args.max_steps, checkpoint_every=args.checkpoint_every,
+            max_updates=args.max_updates)
         if args.lora_rank <= 0 or args.lora_alpha <= 0:
             raise ValueError("LoRA rank and alpha must be positive")
         # Fail invalid data before loading the full model.
@@ -222,7 +225,8 @@ def run(args):
         config["trainable_parameters"] = sum(p.numel() for p in backend.model.parameters() if p.requires_grad)
         return train_pool(backend, args.input, args.output_dir, mode=args.mode, lr=args.lr,
             alpha=args.alpha, beta=args.beta, max_update_norm=args.max_update_norm,
-            epochs=args.epochs, max_steps=args.max_steps, checkpoint_every=args.checkpoint_every,
+            epochs=args.epochs, max_steps=args.max_steps, max_updates=args.max_updates,
+            checkpoint_every=args.checkpoint_every,
             seed=args.seed, image_root=args.image_root,
             allow_whole_claim_negative=args.allow_whole_claim_negative,
             audit_loss_change=args.audit_loss_change, config=config)

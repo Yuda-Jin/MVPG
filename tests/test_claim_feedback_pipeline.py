@@ -10,7 +10,7 @@ from mvpg_run.claim_feedback.__main__ import build_parser, run, smoke
 from mvpg_run.claim_feedback.backends import (CharacterTokenizer, LlavaBackend,
     FGClipVerifier, TinyBackend, llm_lora_targets, response_tokens)
 from mvpg_run.claim_feedback.data import write_jsonl
-from mvpg_run.claim_feedback.training import train_pool
+from mvpg_run.claim_feedback.training import TrainingTargetNotReached, train_pool
 
 
 def test_exact_ids_and_prefix_offsets():
@@ -84,6 +84,78 @@ def test_unresolved_feedback_never_invokes_model(tmp_path):
     assert len(manifest["pool_sha256"]) == 64
 
 
+def test_successful_update_target_ignores_skips_and_stops_across_epochs(tmp_path):
+    source = tmp_path / "pool.jsonl"
+    unresolved, supported = record(), record()
+    supported["id"] = "supported"
+    supported["claims"][0].update(label="+", weight=1)
+    write_jsonl(source, [unresolved, supported])
+    manifest = train_pool(TinyBackend(), source, tmp_path / "run",
+                          epochs=3, max_updates=2)
+    assert manifest["status"] == "complete"
+    assert manifest["counts"] == {"attempted": 4, "updated": 2, "skipped": 2}
+    assert manifest["settings"]["max_updates"] == 2
+    assert manifest["target_updates_reached"] is True
+    assert manifest["stop_reason"] == "max_updates"
+    rows = [json.loads(line) for line in (tmp_path / "run" / "steps.jsonl").read_text().splitlines()]
+    assert [row["epoch"] for row in rows] == [0, 0, 1, 1]
+    assert sum(not row["skipped"] for row in rows) == 2
+    assert all(row["actual_update_norm"] > 0 for row in rows if not row["skipped"])
+    assert (tmp_path / "run" / "final" / "synthetic_model.pt").is_file()
+
+
+@pytest.mark.parametrize("max_steps, expected_counts, stop_reason", [
+    (None, {"attempted": 2, "updated": 1, "skipped": 1}, "pool_exhausted"),
+    (1, {"attempted": 1, "updated": 0, "skipped": 1}, "max_steps"),
+])
+def test_unmet_update_target_is_explicit_and_preserves_partial_adapter(
+        tmp_path, max_steps, expected_counts, stop_reason):
+    source = tmp_path / "pool.jsonl"
+    unresolved, supported = record(), record()
+    supported["id"] = "supported"
+    supported["claims"][0].update(label="+", weight=1)
+    write_jsonl(source, [unresolved, supported])
+    with pytest.raises(TrainingTargetNotReached, match="Requested 2 actual updates"):
+        train_pool(TinyBackend(), source, tmp_path / "run",
+                   max_updates=2, max_steps=max_steps)
+    manifest = json.loads((tmp_path / "run" / "manifest.json").read_text())
+    assert manifest["status"] == "incomplete"
+    assert manifest["counts"] == expected_counts
+    assert manifest["target_updates_reached"] is False
+    assert manifest["stop_reason"] == stop_reason
+    assert "finished_utc" in manifest
+    assert (tmp_path / "run" / "final" / "synthetic_model.pt").is_file()
+
+
+def test_attempt_cap_retains_original_semantics_without_update_target(tmp_path):
+    source = tmp_path / "pool.jsonl"
+    write_jsonl(source, [record()])
+    manifest = train_pool(TinyBackend(), source, tmp_path / "run",
+                          epochs=3, max_steps=2)
+    assert manifest["status"] == "complete"
+    assert manifest["counts"] == {"attempted": 2, "updated": 0, "skipped": 2}
+    assert manifest["target_updates_reached"] is None
+    assert manifest["stop_reason"] == "max_steps"
+
+
+def test_cli_passes_successful_update_target_to_training(tmp_path, monkeypatch):
+    import mvpg_run.claim_feedback.__main__ as cli
+    source, output = tmp_path / "pool.jsonl", tmp_path / "run"
+    item = record()
+    item["claims"][0].update(label="+", weight=1)
+    write_jsonl(source, [item])
+    backend = TinyBackend()
+    backend.lora_targets, backend.adapter_config = [], {}
+    monkeypatch.setattr(cli, "_llava", lambda *args, **kwargs: backend)
+    args = build_parser().parse_args(["train", "--input", str(source),
+        "--output-dir", str(output), "--model-name", "synthetic", "--epochs", "3",
+        "--max-updates", "2"])
+    manifest = run(args)
+    assert manifest["counts"]["updated"] == 2
+    assert manifest["settings"]["max_updates"] == 2
+    assert manifest["backend"]["max_updates"] == 2
+
+
 def test_invalid_forward_records_failed_manifest(tmp_path):
     backend = TinyBackend()
     def fail(*args, **kwargs):
@@ -101,7 +173,8 @@ def test_invalid_forward_records_failed_manifest(tmp_path):
 
 
 @pytest.mark.parametrize("kwargs", [{"lr": -1}, {"alpha": float("nan")},
-    {"max_update_norm": 0}, {"mode": "typo"}, {"epochs": 1.5}, {"checkpoint_every": -1}])
+    {"max_update_norm": 0}, {"mode": "typo"}, {"epochs": 1.5}, {"checkpoint_every": -1},
+    {"max_updates": 0}, {"max_updates": -1}, {"max_updates": 1.5}, {"max_updates": True}])
 def test_preflight_rejects_invalid_options_even_when_no_feedback(tmp_path, kwargs):
     source = tmp_path / "pool.jsonl"
     write_jsonl(source, [record()])
