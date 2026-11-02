@@ -15,7 +15,6 @@ base_datasets/
 base_models/
 output/
 llava/
-!configs/llava/
 llava_setup/LLaVA/
 !eval_llava_rlhf_coco/llava/
 

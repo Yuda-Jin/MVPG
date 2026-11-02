@@ -32,10 +32,10 @@ if [ "${CONDA_DEFAULT_ENV:-}" != "mvpg" ] && [ -d "/root/miniconda3/envs/mvpg" ]
     echo "[auto] 已切换 conda 环境: $CONDA_DEFAULT_ENV ($(which python))"
 fi
 export CUDA_VISIBLE_DEVICES=${GPU_ID:-0}
-# DeepSeek API（OpenAI 兼容格式）：key 需填入下方默认值或运行时 export OPENAI_API_KEY
+# DeepSeek API（OpenAI 兼容格式）：密钥由运行环境 OPENAI_API_KEY 提供
 GPT_MODEL=${GPT_MODEL:-deepseek-v4-flash-vision-exp}
 export OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-"https://api.deepseek.com/v1"}
-export OPENAI_API_KEY=${OPENAI_API_KEY:-"sk-b075bda7454b411d87027f5f19fde236"}
+export OPENAI_API_KEY=${OPENAI_API_KEY:-""}
 export PYTHONPATH="$PWD:$PYTHONPATH"
 echo "PYTHONPATH=$PYTHONPATH  CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 

@@ -2,7 +2,7 @@
 
 背景
 ----
-`run_mvpg.compute_group_rewards` 当前对「区域描述 ↔ 区域子图」打分用的是：
+历史 MVPG 的 `compute_group_rewards` 对「区域描述 ↔ 区域子图」打分用的是：
 
     文本：fg.encode_texts(...)  -> 硬编码 walk_type="short" + max_length=64
     图像：fg.encode_image_paths(...) -> model.get_image_features（整图全局池化）
@@ -73,7 +73,7 @@ IMG_SUFFIXES = (".jpg", ".jpeg", ".png", ".bmp", ".webp")
 
 # (名称, walk_type, max_length, 图像口径)
 #   global = get_image_features（整图池化）；dense = get_image_dense_feature + masked max
-# `short_L64_global` 是 run_mvpg.compute_group_rewards 的当前口径。
+# `short_L64_global` 是历史 MVPG 的打分口径，此处保留作诊断对照。
 #
 # 长度硬约束（modeling_fgclip2.Fgclip2TextEmbeddings.forward）：
 #   walk_short / walk_box 走 `position_embedding`（表宽 = max_position_embeddings = 64）

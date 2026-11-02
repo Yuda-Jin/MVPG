@@ -1,2 +1,2 @@
-# Keep the new Linux training launcher executable by bash on Windows checkouts.
-run/train_claim_feedback.sh text eol=lf
+# Keep training and evaluation launchers usable by bash on Windows checkouts.
+run/*.sh text eol=lf

@@ -97,16 +97,16 @@ class LlavaBackend:
                  train=False, adapter_path=None, lora_rank=16, lora_alpha=32):
         import torch
         try:
-            from mvpg_run.run_mvpg import (load_model_and_tokenizer, build_query,
-                                           process_image)
+            from mvpg_run.llava_inference import (load_model_and_tokenizer, build_query,
+                                                  process_image)
+            model, self.tokenizer, self.image_processor, self.dtype = load_model_and_tokenizer(
+                model_name, bits=16, fp16=precision == "fp16",
+                bf16=precision == "bf16", device=device)
         except ImportError as exc:
-            raise RuntimeError("LLaVA backend requires the repository's patched LLaVA and its environment; see root README Environment Set up") from exc
+            raise RuntimeError("LLaVA backend requires the repository's patched LLaVA and its environment; see root README model environment instructions") from exc
         self.torch, self.device = torch, device
         self.build_query, self.process_image = build_query, process_image
-        model, self.tokenizer, self.image_processor, self.dtype = load_model_and_tokenizer(
-            model_name, bits=16, fp16=precision == "fp16",
-            bf16=precision == "bf16", device=device)
-        # The reused loader enables projector training: explicitly undo it.
+        # Trainability is limited to explicitly added language adapters below.
         model.requires_grad_(False)
         self.lora_targets = []
         self.adapter_config = {}

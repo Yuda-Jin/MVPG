@@ -80,9 +80,9 @@ def eval_model(args):
     model_name = get_model_name_from_path(model_path)
     compute_dtype = torch.float16
     if getattr(args, "mm_projector", None):
-        # MVPG：base 模型 + 训练得到的 mm_projector 权重（与 mvpg_run/run_mvpg.py 同一加载
+        # MVPG：base 模型 + 训练得到的 mm_projector 权重（与共享推理模块使用同一加载
         # 路径：本地 CLIP 目录改写 + mlp2x_gelu 投影层结构，保证与训练权重键完全对齐）
-        from mvpg_run.run_mvpg import load_model_and_tokenizer
+        from mvpg_run.llava_inference import load_model_and_tokenizer
         model, tokenizer, image_processor, dtype = load_model_and_tokenizer(
             model_path, 16, False, True, "cuda"
         )

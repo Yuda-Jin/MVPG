@@ -3,7 +3,7 @@
 用原模型（LLaVA-1.5-7B / LLaVA-1.5-13B）为 SA1B 数据集的每个数据组生成 caption，
 作为「原模型生成的样本」补充进数据（不调用任何 API，纯本地模型推理）。
 
-目录约定（与 run_mvpg.py / tile_demo.py 一致）：
+已有诊断数据的目录约定：
     image-dir/
       neg_captions.json        # 根级新版组级负例池 {gid: [长句负例...]}（只读，不改）
       sa_XXXX/
@@ -12,11 +12,10 @@
         meta.json              # 逐组 meta（更新：替换 neg_captions + 写 model_captions）
 
 推理规则：
-  - 默认使用 `--question`（= run_mvpg.py 的 DEFAULT_QUESTION，长句版）：已落盘的
-    model_captions.json 就是用长句版生成的，保持默认值以免新旧 ref 口径漂移。
-    注意训练 rollout 已改用简洁版 HP_QUESTION，两边 prompt 不再一致（有意为之）。
+  - 默认使用 `--question` 的详细描述提示：已落盘的 model_captions.json 就是
+    用该提示生成的，保持默认值以免新旧诊断数据的口径漂移。
   - 对每组的主图 + 全部子图（网格 crop）逐一推理，含主图。
-  - 生成参数与训练 rollout 一致（do_sample、temperature=1.0、top_p=1.0、top_k=0）。
+  - 默认采样生成（do_sample、temperature=1.0、top_p=1.0、top_k=0）。
 
 输出：
   1) 独立根文件 model_captions.json：{gid: {model_name: {image_stem: caption}}}
@@ -48,21 +47,19 @@ sys.path.insert(0, str(ROOT))
 import torch
 from tqdm import tqdm
 
-from mvpg_run.run_mvpg import (
-    DEFAULT_QUESTION,
+from mvpg_run.llava_inference import (
     build_query,
-    load_groups,
     load_model_and_tokenizer,
     process_image,
-    resolve_group_images,
 )
+from data.grouped_caption_sources import DEFAULT_QUESTION, load_groups, resolve_group_images
 
 
 def generate_batch(model, tokenizer, image_processor, dtype, device, query0, qlen,
                    paths, max_new_tokens, temperature):
     """对 paths（单批）推理，返回与 paths 等长的 caption 列表。
 
-    与训练 rollout 相同的生成方式：同一 query 模板重复 B 次 + 批量化像素前向，
+    生成方式：同一 query 模板重复 B 次 + 批量化像素前向，
     do_sample=True、top_p=1.0、top_k=0、temperature（默认 1.0）。
     """
     pixels = torch.stack([process_image(image_processor, p) for p in paths]).to(
@@ -99,10 +96,10 @@ def main():
     p.add_argument("--model-dir", default="/root/autodl-tmp/cache", help="模型所在目录")
     p.add_argument("--models", default="llava-v1.5-7b,llava-v1.5-13b",
                    help="逗号分隔的模型子目录名（位于 model-dir 下）")
-    p.add_argument("--question", default=DEFAULT_QUESTION, help="生成 prompt（默认与训练一致）")
+    p.add_argument("--question", default=DEFAULT_QUESTION, help="生成 prompt（默认保持已有诊断 caption 的详细描述提示）")
     p.add_argument("--max-new-tokens", type=int, default=128, help="生成最大 token 数")
     p.add_argument("--temperature", type=float, default=1.0,
-                   help="采样温度；<=0 时退化为贪心解码（训练为 1.0）")
+                   help="采样温度；<=0 时退化为贪心解码（默认 1.0）")
     p.add_argument("--batch-size", type=int, default=40, help="一次 generate 的图片数")
     p.add_argument("--save-every", type=int, default=1000,
                    help="每生成多少张图落盘一次 model_captions.json（图片级断点续传）")
@@ -111,7 +108,7 @@ def main():
     p.add_argument("--meta-name", default="meta.json", help="子目录 meta 文件名")
     p.add_argument("--bits", type=int, default=16, choices=[4, 8, 16])
     p.add_argument("--fp16", action="store_true")
-    p.add_argument("--bf16", action="store_true", help="与训练一致使用 bf16")
+    p.add_argument("--bf16", action="store_true", help="使用 bf16")
     p.add_argument("--force", action="store_true",
                    help="忽略已有 model_captions.json 结果，重新生成全部（默认跳过已完成的图）")
     args = p.parse_args()

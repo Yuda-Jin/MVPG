@@ -1,8 +1,8 @@
 # ! This script is used to evaluate the model on multiple benchmarks.
 # ! Evaluation requires only one GPU, but you should at least guarantee that the GPU memory larger than 40 GB to prevent OOM problem.
 export CUDA_VISIBLE_DEVICES=3
-export OPENAI_ENDPOINT="YOUR_ENDPOINT"
-export OPENAI_API_KEY='YOUR_API_KEY'
+export OPENAI_ENDPOINT="${OPENAI_ENDPOINT:-}"
+export OPENAI_API_KEY="${OPENAI_API_KEY:-}"
 export PYTHONPATH="$PWD:$PYTHONPATH"
 echo "PYTHONPATH=$PYTHONPATH"
 

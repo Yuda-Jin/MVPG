@@ -1,167 +1,81 @@
-# MVPG: claim-level visual feedback experiments
+# MVPG：声明级视觉反馈与回答内更新调制
 
-当前 story 的独立实现入口为 `python -m mvpg_run.claim_feedback`：生成回答 →
-DiscoSG 对象存在性申明 → 冻结 FG-CLIP2 弱反馈 → 原文 token 对齐 →
-回答内正负梯度调制 → LLM-only LoRA 更新。保留原 MVPG 训练入口。
+本分支实现当前 story：图像与问题 → MLLM 生成回答 → DiscoSG 申明分解 → 冻结视觉支持核验 → 原文 token 对齐 → 正负梯度调制 → LLM LoRA 更新。训练不要求外部完整修订回答或响应级偏好对，内部仍使用自动产生的正负伪反馈和校准阈值。
 
-使用方法、监督条件、五组机制对照及适用边界见
-[声明级视觉反馈说明](mvpg_run/claim_feedback/README.md)。仅验证了核心机制与离线接口，
-真实 LLaVA/DiscoSG 权重上的训练及 benchmark 结果仍待验证。
+完整方法边界、JSONL 格式、五种更新对照和运行命令见 [声明级视觉反馈说明](mvpg_run/claim_feedback/README.md)。当前已完成离线接口与合成机制验证，真实权重训练和 benchmark 效果尚待验证。
 
-本仓库原始 OPA-DPO 来源和环境说明保留如下。
+## 目录与入口
 
-# OPA-DPO (On-Policy Alignment Direct Preference Optimization)
+| 路径 | 用途 |
+|---|---|
+| `mvpg_run/claim_feedback/` | 当前训练链路：生成、分解、核验、审计及单回答 SGD 调制 |
+| `mvpg_run/llava_inference.py` | 新训练和保留的诊断脚本共用的 LLaVA 加载、prompt 与图像处理 |
+| `mvpg_run/fgclip_local.py`、`mvpg_run/fgclip2/` | 冻结 FG-CLIP2 后端及兼容实现 |
+| `eval_llava_rlhf_coco/` | 幻觉与能力评估代码、问题、标注及评分汇总 |
+| `data/` | 保留的视觉支持、幻觉反馈诊断和校准脚本 |
+| `run/` | 当前训练启动、保留的评估及模型准备脚本 |
+| `llava_setup/`、`utils/` | patched LLaVA 补丁及运行兼容依赖 |
+| `tests/` | 数据对齐、DiscoSG 接口、梯度调制和端到端离线检查 |
 
-[![arXiv](https://img.shields.io/badge/arXiv-PDF-red)](https://arxiv.org/abs/2501.09695)
-[![Project Page](https://img.shields.io/badge/Project-Page-brightgreen)](https://opa-dpo.github.io/)
-[![Google Drive](https://img.shields.io/badge/Dataset-GoogleDrive-yellow)](https://drive.google.com/drive/folders/1Xmrb43zIbk3IzLLRQx65iBf7J4SHXa9j)
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-Model-orange)](https://huggingface.co/zhyang2226)
-[![MSRA](https://img.shields.io/badge/MSRA-官网报道-red)](https://www.microsoft.com/en-us/research/articles/opa-dpo/)
-[![MSRA](https://img.shields.io/badge/MSRA-微信公众号-green)](https://mp.weixin.qq.com/s/CbcQCeKX6WSZfcVn6fOmHA)
-[![知乎](https://img.shields.io/badge/知乎-中文解析-0084FF)](https://www.zhihu.com/question/13954924392/answer/116196467419)
+旧 MVPG、OPA/OPA-DPO 训练链路及其专用数据准备与配置已清理。旧版本可从 Git 历史恢复；旧 projector 检查点的评估入口仍保留。
 
-#### Authors: [Zhihe Yang](https://zhyang2226.github.io)$^{1,3}$, [Xufang Luo](https://www.microsoft.com/en-us/research/people/xufluo/)$^{2*}$, [Dongqi Han](https://www.microsoft.com/en-us/research/people/dongqihan/)$^2$, [Yunjian Xu](https://www4.mae.cuhk.edu.hk/peoples/xu-yunjian/)$^{1,3*}$, [Dongsheng Li](http://recmind.cn/)$^2$
+## 快速检查
 
-($^*$ for corresponding authors)
+在已安装 PyTorch 和 pytest 的环境中，从仓库根目录执行：
 
-1. The Chinese University of Hong Kong, Hong Kong SAR, China
-2. Microsoft Research Asia, Shanghai, China
-3. The Chinese University of Hong Kong, Shenzhen Research Institute (SZRI), Guangdong, China
-
-## NEWS!!!
-
-(2025.11) 🎉 OPA-DPO has been adopted by [Hunyuan-Video-1.5](https://arxiv.org/html/2511.18870v1) as a core methodology for mitigating hallucinations in caption models.
-
-(2025.6) 🎉 The recording of our oral presentation is available on [Youtube](https://www.youtube.com/watch?v=X3vk9LziL6Q) and [Bilibili](https://www.bilibili.com/video/BV1aENbzhEQV). The PowerPoint slides can be accessed [here](https://github.com/zhyang2226/OPA-DPO/blob/main/assests/README/CVPR_Oral_v6_final.pptx). The source files for all figures/diagrams are provided [here](https://github.com/zhyang2226/OPA-DPO/blob/main/assests/README/draw_fig.pptx).
-
-(2025.4) 🎉 Our paper has been selected for **Oral Presentation** (**0.74%** 96/13008)!
-
-(2025.2) 🎉 Our paper has been accepted by **CVPR 2025**! See you in Nashville this summer!
-
-
-## Introduction
-
-Hallucination remains a major challenge for Large Vision-Language Models (LVLMs). Direct Preference Optimization (DPO) has gained increasing attention as a simple solution to hallucination issues. Nonetheless, different data construction methods in existing works bring notable performance variations.
-
-We identify a crucial factor: outcomes are largely contingent on whether the constructed data aligns on-policy w.r.t the initial (reference) policy of DPO. Due to the implicit KL-divergence constraint, off-policy data cannot be effectively learned (Fig.a left).
-
-We propose On-Policy Alignment (OPA)-DPO framework (Fig.a right and Fig.d), which uniquely leverages expert feedback to correct hallucinated responses and aligns both the original and expert-revised responses in an on-policy manner.
-
-Compared with DPO without OPA operations, OPA-DPO significantly enhances performance (Fig.c). It achieves SOTA performance with only 4.8k training data, while most DPO-based algorithms require over 10k data (Fig.b).
-
-![intro_fig](assests/README/intro_fig.png)
-
-## Example
-
-Below is a qualitative example of OPA-DPO. OPA-DPO successfully resolves most of the hallucinations (marked in red), though at the expense of omitting some details present in the original description.
-
-![example](assests/README/example.png)
-
-## Environment Set up
-
-Our codebase extensively utilizes [LLaVA](https://github.com/haotian-liu/LLaVA). However, due to copyright concerns, we are unable to include the LLaVA source code directly within our OPA-DPO codebase. To begin, please execute the following command to copy and adapt the LLaVA codebase into OPA-DPO directory:
-
-```
-git clone https://github.com/microsoft/OPA-DPO
-cd OPA-DPO/llava_setup
-git clone https://github.com/haotian-liu/LLaVA
-cd LLaVA
-git reset --hard 817a4af
-cd ..
-patch -p1 < llava_modifications.patch
-cd ..
-mv ./llava_setup/LLaVA/llava ./
+```bash
+python -m mvpg_run.claim_feedback --help
+python -m mvpg_run.claim_feedback smoke --output-dir output/claim_feedback_smoke
+python -m pytest -q tests
 ```
 
-To set up the environment for OPA-DPO, please execute the following command:
+`smoke` 只使用合成小模型和人工构造反馈，不读取真实图像，不构成幻觉缓解效果实验。输出目录必须是新的目录。
 
-```
+## 真实模型环境
+
+真实 LLaVA 和保留的评估流程沿用 Linux patched LLaVA 环境。`environment.yaml` 是上游环境的兼容快照，包含较旧版本和历史依赖；保留它便于复现，不代表其中每个包都是新训练的必要依赖。不要直接用它覆盖当前正在使用的环境。
+
+```bash
 conda env create -f environment.yaml
 conda activate OPA_DPO
-pip install flash-attn==2.5.3
+pip install -r requirements-claim-feedback.txt
 ```
 
-Please be aware that the existing version of OPA-DPO is exclusively compatible with the Linux environment. The default configuration is designed for a single node with 4x80GB A100.
+patched LLaVA 基于上游提交 `817a4af`。以下步骤用于尚未准备源码的新环境：
 
-## Training OPA-DPO
-
-### Step 0: BASE Models and Datasets Preparation
-
-Before initiating the training process, it is required to download the base models (LLaVA-1.5-7B/13B) and vision towers (CLIP-VIT) to the local directory `./base_models/` using the following command:
-
-```
-bash run/prepare_basemodels.sh
+```bash
+git clone https://github.com/haotian-liu/LLaVA llava_setup/LLaVA
+git -C llava_setup/LLaVA checkout 817a4af
+(cd llava_setup && patch -p1 < llava_modifications.patch)
+cp -R llava_setup/LLaVA/llava ./llava
 ```
 
-Subsequently, it is essential to construct the training dataset. You have two options:
+`llava/` 是本地运行依赖，不纳入本仓库追踪。补丁中的旧训练模块不作为当前分支入口；使用这里的生成、训练及评估脚本。补丁的推理组件需要 `utils/constants.py` 和 `utils/checkpoint_utils.py`，因此这些兼容模块保留。
 
-* Utilize our pre-constructed dataset, which is collected by LLaVA-1.5-7B/13B along with images and prompts from [RLAIF-V-Dataset](https://huggingface.co/datasets/openbmb/RLAIF-V-Dataset). It also includes feedback generated by GPT-4V. To proceed, download the dataset from our [**Google Drive container**](https://drive.google.com/drive/folders/1Xmrb43zIbk3IzLLRQx65iBf7J4SHXa9j) and copy all contents into the `./output/` directory. Then run `python base_operations/make_opadpo_dataset.py`. **Once completed, you may skip directly to Step 3 OPA Training!**
-* Alternatively, you can collect the data yourself. We provide a detailed procedure for reproducing our datasets. The datasets can be compiled by following the steps outlined below.
+模型下载与配置工具也保留：`run/prepare_basemodels.sh`、`base_operations/modify_base_model_config.py`。它们默认准备 LLaVA-1.5-7B/13B 和 CLIP，运行前检查路径与存储空间；自备模型可按实际目录配置。设置 `LLAVA_CLIP_DIR` 可指定本地视觉塔。DiscoSG 种子模型、训练好的 refiner 和视觉核验阈值的要求见方法说明，不能用切句或随机初始化替代。
 
-By default, we utilize partial prompts and images from the [RLAIF-V-Dataset](https://huggingface.co/datasets/openbmb/RLAIF-V-Dataset). To download this dataset to local directory `./base_datasets/LLaVA-RLAIF-Data` and extract a subset of samples, simply execute the following command:
+## 幻觉及能力评估
 
-```
-bash run/prepare_datasets.sh
-```
+以下代码、脚本及其仓库内问题/标注文件均保留：
 
-### Step 1-2: Rollout base models & use GPT-4V for fine-grained hallucination correction
+- MMHal-Bench：生成、模型评分及结果汇总。
+- Object HalBench：对象幻觉生成、评分及结果汇总。
+- POPE：random、popular、adversarial 问题集及判别指标。
+- AMBER：生成/判别查询、标注和评估。
+- LLaVA-Bench qa90 与其他已有问答/能力评估入口。
+- `data/` 中的视觉支持、错图、反事实、细粒度幻觉与阈值诊断工具。
 
-As shown in Fig.d, the first step is to collect responses from the original policy. The second step involves using GPT-4V to correct any hallucinations in the generated responses. These steps can be executed simultaneously using the following command:
+`run/eval_all_metrics.sh` 保留 LoRA 评估流程；新训练生成的 `final/` 是 LoRA adapter，按脚本参数设置底模与适配器路径。`run/eval_all_metrics_mvpg.sh` 保留旧 `mm_projector` 检查点评估能力。`run/summarize_eval_results.py` 和评估目录内的汇总脚本继续保留。
 
-```
-bash run/online_generate.sh
-```
+图片数据、COCO 标注、部分外部数据和实际权重需要另行准备。GPT 评分需要通过环境变量配置服务与凭据；评估脚本的历史默认路径、服务与参数应在使用前检查。生成成功和弱反馈统计不能替代 benchmark 指标，也不能证明一般能力保持。
 
-Before proceeding, it is essential to **configure your personal API endpoint and key** within the `run/online_generate.sh` script. Please refer to lines 66 to 69 to complete this setup.
+## 来源与许可
 
-By default, each run can only be performed on **a single subset consisting of 2500 samples**. If you want to use more training data or employ a different base model, you'll need to modify the sections of the code that are currently commented out. (Consistent with the experimental results presented in our main paper, you only need to prepare generations for **two subsets**, consisting of 5,000 samples. Due to the instability of the GPT-4V API, the final number of usable samples is approximately 4,800.)
+本仓库基于 Microsoft [OPA-DPO](https://github.com/microsoft/OPA-DPO)，保留其 [MIT 许可](LICENSE)。同时使用或适配 LLaVA、LLaVA-RLHF 和 FG-CLIP2 等项目的代码与接口；外部代码、模型及数据遵循各自许可。删除旧训练入口不改变保留代码的来源归属。
 
-After collecting the dataset, OPA and OPA-DPO dataset can be built up through:
+上游 OPA-DPO 论文引用：
 
-```
-python base_operations/make_opadpo_dataset.py
-```
-
-Please make sure that you have corresponding `opa_training_data-7B` (or `opa_training_data-13B`) and `opadpo_training_data-7B` (or `opadpo_training_data-13B`) in directory `./base_datasets/` after this step.
-
-### Step 3: OPA Training
-
-As presented in Fig.d, the third step is to conduct LoRA-SFT on the GT responses and revised responses. It can be conducted through:
-
-```
-bash run/train_opa.sh
-```
-
-Your OPA model will be saved at `./output/llava7b_opa_model/checkpoint-final` (or `output/llava13b_opa_model/checkpoint-final`) after this step. (If you utilize our provided dataset and train using 4×A100-80GB, this step is expected to be completed within 30 minutes.)
-
-### Step 4: OPA-DPO Training
-
-As presented in Fig.d, the last (fourth) step is to initiate OPA-DPO training from the policy obtained in step3. Please run the following command:
-
-```
-bash run/train_opa_dpo.sh
-```
-
-Your final OPA-DPO model will be saved at `./output/llava7b_opadpo_model/checkpoint-final` (or `output/llava13b_opadpo_model/checkpoint-final`). It is a LoRA adapter and should be combined with its base model for final usage.
-
-
-## Evaluation
-Before evaluating the trained model, ensure that the **COCO2014/COCO2017 images and annotations** [[here](https://cocodataset.org/#download)], as well as the **AMBER dataset** [[here](https://github.com/junyangwang0410/AMBER?tab=readme-ov-file)], are downloaded to the designated folders. Subsequently, update the corresponding paths in lines 30–33 of `run/eval_all_metrics.sh`.
-Additionally, specify **your personal API endpoint and key** in lines 4–5 of the same script.
-
-```
-bash run/eval_all_metrics.sh
-```
-
-## Acknowledgements
-
-We would like to express our gratitude for the code snippets provided in [LLaVA](https://github.com/haotian-liu/LLaVA), [LLaVA-RLHF](https://github.com/llava-rlhf/LLaVA-RLHF), [FastChat](https://github.com/lm-sys/FastChat) and [TRL](https://github.com/huggingface/trl), and datasets provided in [RLAIF-V](https://huggingface.co/datasets/openbmb/RLAIF-V-Dataset). These resources have significantly contributed to the development of our project.
-
-## Bibtex
-
-If you find OPA-DPO helpful for your work, please cite
-
-```
+```bibtex
 @article{yang2025opadpo,
   title={Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key},
   author={Yang, Zhihe and Luo, Xufang and Han, Dongqi and Xu, Yunjian and Li, Dongsheng},
@@ -169,4 +83,3 @@ If you find OPA-DPO helpful for your work, please cite
   year={2025}
 }
 ```
-
