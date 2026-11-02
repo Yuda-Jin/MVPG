@@ -1,40 +1,27 @@
 import os
 import sys
-import ssl
 import json
+import hashlib
 import copy
 import glob
 import time
 import pathlib
 import random
-import jsonlines
 
 import nltk
-nltk.download('averaged_perceptron_tagger')
-nltk.download('punkt')
-nltk.download('wordnet')
 
-import spacy
 import argparse
 import concurrent.futures
 
 from concurrent.futures import ThreadPoolExecutor
-from nltk.stem import *
+from nltk.stem import WordNetLemmatizer
 # from gpt4_grpc import Chat
-from openai import OpenAI
 from tqdm import tqdm
 
 
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
-
-nlp = spacy.load("en_core_web_trf")
-lemma = nltk.wordnet.WordNetLemmatizer()
+# NLTK data is prepared separately. Importing/scoring must not download resources.
+nlp = None
+lemma = WordNetLemmatizer()
 
 
 def parse_object_list(content):
@@ -48,6 +35,8 @@ def parse_object_list(content):
                 raise ValueError('Content is not json interpretable')
         else:
             raise ValueError('Content is not json interpretable')
+    if not isinstance(content, list) or any(not isinstance(item, str) or not item.strip() for item in content):
+        raise ValueError('Extracted objects must be a JSON list of nonempty strings')
     return content
 
 
@@ -129,23 +118,33 @@ def combine_coco_instances(annotation_path):
     return all_instances
 
 
+def judge_request_options(model):
+    """Opt in to DeepSeek's non-thinking mode without changing GPT requests."""
+    thinking = os.getenv("JUDGE_THINKING", "").strip().lower()
+    if not str(model).lower().startswith("deepseek-") or not thinking:
+        return {}
+    if thinking != "disabled":
+        raise ValueError("JUDGE_THINKING must be unset or disabled")
+    # DeepSeek documents this OpenAI SDK extension explicitly.
+    return {"extra_body": {"thinking": {"type": "disabled"}}}
+
+
 class CHAIR(object):
 
-    def __init__(self, imids, coco_path, openai_apikey, gpt_model):
-
+    def __init__(self, imids, coco_path, openai_apikey=None, gpt_model='gpt-4',
+                 use_gpt=False, resume_path=None, max_retries=3, timeout=60):
         self.imid_to_objects = {imid: [] for imid in imids}
-
         self.coco_path = coco_path
-
-        api_key = os.getenv("OPENAI_API_KEY")
-        self.client = OpenAI(
-            base_url=os.getenv("OPENAI_ENDPOINT"),
-            api_key=api_key,
-        )
+        self.client = None
+        self.api_key = openai_apikey or os.getenv("OPENAI_API_KEY")
         self.gpt_model = gpt_model
-        # self.chat_model = Chat(model=gpt_model, timeout_sec=100, openai_apikey=openai_apikey)
-        self.fail_limit=100
-
+        self.resume_path = pathlib.Path(resume_path) if resume_path else None
+        self.fail_limit = max_retries
+        self.timeout = timeout
+        if self.fail_limit < 1 or timeout <= 0:
+            raise ValueError("max_retries and timeout must be positive")
+        if use_gpt:
+            self._ensure_client()
 
         #read in synonyms
         synonyms = open('./eval_llava_rlhf_coco/object_hal/synonyms_refine.txt').readlines()
@@ -319,92 +318,92 @@ class CHAIR(object):
         self.get_annotations_from_segments()
         self.get_annotations_from_captions()
 
+    def _ensure_client(self):
+        if self.client is None:
+            if not self.api_key:
+                raise ValueError("OPENAI_API_KEY is required only for --use_gpt Object HalBench scoring")
+            from openai import OpenAI
+            self.client = OpenAI(
+                base_url=os.getenv("OPENAI_ENDPOINT") or os.getenv("OPENAI_BASE_URL") or None,
+                api_key=self.api_key, timeout=self.timeout, max_retries=0,
+            )
+
     def get_gpt_resp(self, data_item):
+        self._ensure_client()
+        request_options = judge_request_options(self.gpt_model)
         prompt = copy.deepcopy(prompt_template)
         prompt = prompt.replace("{question}", data_item["question"])
         prompt = prompt.replace("{answer}", data_item["caption"])
-
-        messages = [
-            {"role": "system", "content": prompt}
-        ]
-
-        fail_cnt = 0
-        used_tokens = {"total": 0, "input": 0, "output": 0}
-        while True:
-            if len(data_item["caption"].strip().split()) <= 3:
-                data_item["extract_objs"] = []
-                print(f"**[Short Answer]**@{data_item['caption']}@", data_item["extract_objs"])
-                return data_item, used_tokens, {"total": 0, "input": 0, "output": 0}
-
-            if fail_cnt == self.fail_limit:
-                data_item["extract_objs"] = f'-1\n<no_response>'
-                print("**[Wrong Return]**", data_item["extract_objs"])
-                return data_item, used_tokens, {"total": 0, "input": 0, "output": 0}
-
-            resp = None
+        messages = [{"role": "system", "content": prompt}]
+        if len(data_item["caption"].strip().split()) <= 3:
+            # Preserve the released evaluator's short-answer handling.
+            data_item["extract_objs"] = []
+            return data_item, None, None
+        for attempt in range(self.fail_limit):
             try:
-                # resp = self.chat_model.chat_completion(messages=messages)
-                # print(resp["model"])
-                # Logging consumption
-                # used_tokens["total"] += resp['usage']["total_tokens"]
-                # used_tokens["input"] += resp['usage']["prompt_tokens"]
-                # used_tokens["output"] += resp['usage']["completion_tokens"]
-                resp = self.client.chat.completions.create(
+                response = self.client.chat.completions.create(
                     model=self.gpt_model, messages=messages, temperature=0.0,
+                    **request_options,
                 )
-                print(resp.choices[0].message.content)
-
-                # Parsing ChatGPT response
-                content = resp.choices[0].message.content
+                content = response.choices[0].message.content
+                if not isinstance(content, str):
+                    raise ValueError("Object extractor returned no text")
                 content = content.replace('```json', '').replace('```', '').replace('\n', '')
-                content = parse_object_list(content)
-
-                # # API Rest
-                # time.sleep(5)
-
-                data_item["extract_objs"] = content
-                # success_tokens = {"total": resp['usage']['total_tokens'],
-                #                   "input": resp['usage']['prompt_tokens'],
-                #                   "output": resp['usage']['completion_tokens']}
-                # return data_item, used_tokens, success_tokens
+                data_item["extract_objs"] = parse_object_list(content)
                 return data_item, None, None
-            except Exception as e:
-                fail_cnt += 1
-                # print(f'{data_item["index"]} Fail for other reasons')
-                # print("message:", messages)
-                print("Exception:", e, 'resp is ', resp)
+            except Exception as exc:
+                status = getattr(exc, "status_code", None)
+                fatal = status is not None and 400 <= status < 500 and status not in (408, 409, 429)
+                if fatal or attempt + 1 == self.fail_limit:
+                    raise RuntimeError(
+                        f"Object extraction failed ({type(exc).__name__}, status={status}); no score was assigned"
+                    ) from exc
+                time.sleep(min(2 ** attempt, 10))
+        raise RuntimeError("No valid object extraction")
 
-                time.sleep(10 + fail_cnt)
+    def _cache_key(self, item):
+        value = {name: item[name] for name in ('image_id', 'question', 'caption')}
+        value['judge_model'] = self.gpt_model
+        value['judge_request_options'] = judge_request_options(self.gpt_model)
+        return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
-    def gpt_caption_processor(self, max_workers=64):
-        data_list = self.caps
-        new_data = []
-        all_used_tokens = {"total": 0, "input": 0, "output": 0}
-        all_success_tokens = {"total": 0, "input": 0, "output": 0}
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            print("thread num:", len(data_list))
-
-            futures = [
-                executor.submit(self.get_gpt_resp, data_item)
-                for data_item in data_list
-            ]
-
-            pb = tqdm(total=len(futures))
-
-            for i, future in enumerate(concurrent.futures.as_completed(futures)):
-                pb.update(1)
-
-                try:
-                    new_data_item, used_tokens, success_tokens = future.result() # type = List
-                    # all_used_tokens = {key: all_used_tokens[key] + used_tokens[key] for key in all_used_tokens.keys()}
-                    # all_success_tokens = {key: all_success_tokens[key] + success_tokens[key] for key in all_success_tokens.keys()}
-                    new_data.append(new_data_item)
-
-                except Exception as e:
-                    print(f"@@@ Exception: {e}\n")
-        print(f'Done loop, waiting resource finalization', flush=True)
-
-        return new_data, all_used_tokens, all_success_tokens
+    def gpt_caption_processor(self, max_workers=8):
+        self._ensure_client()
+        keys = [self._cache_key(item) for item in self.caps]
+        cached = {}
+        items_by_key = {key: item for item, key in zip(self.caps, keys)}
+        if self.resume_path and self.resume_path.exists():
+            for row in read_jsonl(str(self.resume_path)):
+                key = row['key']
+                if key not in items_by_key or key in cached:
+                    raise ValueError("Object extraction cache has different inputs/model or duplicated entries")
+                cached[key] = parse_object_list(json.dumps(row['extract_objs']))
+        if self.resume_path:
+            self.resume_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_handle = self.resume_path.open('a', encoding='utf-8')
+        else:
+            cache_handle = None
+        try:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(self.get_gpt_resp, copy.deepcopy(item)): key
+                           for key, item in items_by_key.items() if key not in cached}
+                for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+                    try:
+                        item, _, _ = future.result()
+                    except Exception:
+                        for pending in futures:
+                            pending.cancel()
+                        raise
+                    key = futures[future]
+                    cached[key] = item['extract_objs']
+                    if cache_handle:
+                        cache_handle.write(json.dumps({'key': key, 'extract_objs': item['extract_objs']}) + '\n')
+                        cache_handle.flush()
+        finally:
+            if cache_handle:
+                cache_handle.close()
+        results = [dict(item, extract_objs=cached[key]) for item, key in zip(self.caps, keys)]
+        return results, {}, {}
 
     def postagging(self, doc):
         obj_list = []
@@ -423,6 +422,10 @@ class CHAIR(object):
         return obj_list
 
     def get_pred_objs_match(self, caps):
+        global nlp
+        if nlp is None:
+            import spacy
+            nlp = spacy.load("en_core_web_trf")
         new_caps = []
         for item in caps:
             caps_gpt_objs = item["extract_objs"]
@@ -540,6 +543,8 @@ class CHAIR(object):
 
             output['sentences'].append(cap_dict)
 
+        if not num_caps or not num_coco_caps or not coco_word_count or not gt_word_count:
+            raise ValueError("Object HalBench has an empty metric denominator; no aggregate score is valid")
         chair_s = (num_hallucinated_caps/num_caps)
         chair_s_refine = (num_hallucinated_caps/num_coco_caps)
         chair_i = (hallucinated_word_count/coco_word_count)
@@ -566,8 +571,9 @@ class CHAIR(object):
 def read_jsonl(jsonl_file):
     data = []
     with open(jsonl_file, 'r', encoding='utf-8') as f1:
-        for item in jsonlines.Reader(f1):
-            data.append(item)
+        for line in f1:
+            if line.strip():
+                data.append(json.loads(line))
     return data
 
 def load_generated_captions(cap_file, org_dir=None):
@@ -687,7 +693,9 @@ if __name__ == '__main__':
     parser.add_argument("--sample_num", type=int, default=-1)
     parser.add_argument("--use_gpt", action='store_true')
     parser.add_argument('--api-key', type=str, default=None)
-    parser.add_argument('--gpt-model', type=str, default='gpt-4-0314')
+    parser.add_argument('--gpt-model', type=str, default=os.getenv('GPT_MODEL', 'gpt-4'))
+    parser.add_argument('--max-retries', type=int, default=3)
+    parser.add_argument('--timeout', type=float, default=60)
     args = parser.parse_args()
 
     print("use gpt:", args.use_gpt)
@@ -708,7 +716,10 @@ if __name__ == '__main__':
     # assert len(imids) == 300
 
     print("=======init evaluator=======")
-    evaluator = CHAIR(imids, args.coco_path, args.api_key, args.gpt_model)
+    evaluator = CHAIR(imids, args.coco_path, args.api_key, args.gpt_model,
+                      use_gpt=args.use_gpt,
+                      resume_path=args.evaluation_file + '.gpt_objects.jsonl' if args.use_gpt else None,
+                      max_retries=args.max_retries, timeout=args.timeout)
     evaluator.get_annotations()
 
     print("========compute=========")
@@ -732,6 +743,13 @@ if __name__ == '__main__':
         cap_dict = evaluator.compute_chair(path, args.sample_num, gpt_process=args.use_gpt)
         print(f'Done computing')
         print_metrics(cap_dict)
+        if args.evaluation_file:
+            # Exact requested path is the completion artifact; publish only a full score.
+            destination = pathlib.Path(args.evaluation_file)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            temporary = destination.with_name(destination.name + '.tmp')
+            temporary.write_text(json.dumps(cap_dict, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+            temporary.replace(destination)
 
         print("==" * 30)
         print("Evaluate the results from the inference data: ")

@@ -5,10 +5,9 @@ import spacy
 from tqdm import tqdm
 import warnings
 import argparse
-nlp = spacy.load("en_core_web_lg")
-nltk.download('averaged_perceptron_tagger')
-nltk.download('punkt')
-nltk.download('wordnet')
+import ast
+import re
+nlp = None
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
@@ -21,8 +20,29 @@ def get_args():
     parser.add_argument("--metrics", type=str, default='./eval_llava_rlhf_coco/AMBER_data/metrics.txt')
     parser.add_argument("--similarity_score", type=float, default=0.8)
     parser.add_argument('--evaluation_type', choices=['a', 'g', 'd', 'de', 'da', 'dr'], help='a: all tasks and dimensions    g: generative task    d: descriminative task    de, da, dr: existence, attribute, relation')
+    parser.add_argument("--yes-no-normalization", choices=("strict", "leading"), default="strict",
+                        help="strict preserves official AMBER literal Yes/No; leading is an explicitly labeled parsing variant")
     args = parser.parse_args()
     return args
+
+
+def parse_yes_no(response, policy="strict"):
+    """Default follows the official AMBER evaluator's literal Yes/No protocol.
+
+    The optional leading-token variant accepts case/punctuation and explanations
+    only when the response starts with an unambiguous yes/no word. It never maps
+    an unknown, empty or refusal response to yes/no.
+    """
+    if policy == "strict":
+        return response if response in ("Yes", "No") else None
+    match = re.match(r"^\s*(yes|no)(?=$|[\s.,!?;:])", response, re.IGNORECASE)
+    return match[1].capitalize() if match else None
+
+
+def percentage(numerator, denominator):
+    # An absent predicted class has zero precision. Keep all official formulas
+    # and rounding for defined denominators; avoid crashes on an all-Yes model.
+    return numerator / denominator * 100 if denominator else 0.0
 
 
 def check_synonyms_word(word1, word2, similarity_score):
@@ -40,7 +60,7 @@ def extract_nouns(text):
     return nouns
 
 
-def init():
+def init(args):
     metrics = {}
     with open(args.metrics, "r") as file:
         lines = file.readlines()
@@ -49,14 +69,15 @@ def init():
         parts = line.strip().split('=')
         if len(parts) == 2:
             variable_name = parts[0].strip()
-            variable_value = eval(parts[1].strip())
+            variable_value = ast.literal_eval(parts[1].strip())
             metrics[variable_name] = variable_value
 
     return metrics
 
 
 def main(args):
-    metrics = init()
+    global nlp
+    metrics = init(args)
     association = json.load(open(args.word_association, 'r', encoding='utf-8'))
     hallucination_words = []
     for word1 in association.keys():
@@ -89,12 +110,24 @@ def main(args):
         for line in f:
             inference_data.append(json.loads(line.strip()))
     ground_truth = json.load(open(args.annotation, 'r', encoding='utf-8'))
+    if not inference_data:
+        raise ValueError("AMBER inference data is empty")
+    ids = [row['id'] for row in inference_data]
+    if len(ids) != len(set(ids)) or any(not isinstance(i, int) or not 1 <= i <= len(ground_truth) for i in ids):
+        raise ValueError("AMBER IDs must be unique valid annotation IDs")
+    if dimension['g']:
+        nlp = spacy.load("en_core_web_lg")
+    invalid_discriminative = 0
+    normalized_discriminative = 0
+    discriminative_count = 0
 
     for i in tqdm(range(len(inference_data))):
     # for i in range(len(inference_data)):
         id = inference_data[i]['id']
 
         if ground_truth[id-1]['type'] == 'generative':
+            if not dimension['g']:
+                continue
             nouns = extract_nouns(inference_data[i]['response'])
             after_process_nouns = []
             for noun in nouns:
@@ -200,7 +233,11 @@ def main(args):
                 metrics['asso_qa_correct_num'] += 1
 
             truth = ground_truth[id-1]['truth']
-            response = inference_data[i]['response']
+            raw_response = inference_data[i]['response']
+            response = parse_yes_no(raw_response, args.yes_no_normalization)
+            discriminative_count += 1
+            invalid_discriminative += response is None
+            normalized_discriminative += response is not None and response != raw_response
             if truth == 'yes':
                 if response == 'Yes':
                     metrics['qa_correct_score'] += 1
@@ -277,11 +314,20 @@ def main(args):
     print("AMBER Bench")
     print("==" * 30)
 
+    print(f"Yes/No parsing: {args.yes_no_normalization}")
+    print(f"Discriminative responses: {discriminative_count}")
+    print(f"Invalid discriminative responses: {invalid_discriminative}")
+    print(f"Normalized discriminative responses: {normalized_discriminative}")
+    if dimension['g'] and metrics['non_hallu_num'] == 0:
+        raise ValueError("Selected generative evaluation has no generative responses")
+    if any(dimension[key] for key in ('de', 'da', 'dr')) and not discriminative_count:
+        raise ValueError("Selected discriminative evaluation has no discriminative responses")
+
     if dimension['g']:
-        CHAIR = round(metrics['chair_score'] / metrics['chair_num'] * 100, 1)
-        Cover = round(metrics['safe_cover_score'] / metrics['safe_cover_num'] * 100, 1)
-        Ha = round(metrics['hallu_cover_score'] / metrics['hallu_cover_num'] * 100, 1)
-        Ha_p = round(100 - metrics['non_hallu_score'] / metrics['non_hallu_num'] * 100, 1)
+        CHAIR = round(percentage(metrics['chair_score'], metrics['chair_num']), 1)
+        Cover = round(percentage(metrics['safe_cover_score'], metrics['safe_cover_num']), 1)
+        Ha = round(percentage(metrics['hallu_cover_score'], metrics['hallu_cover_num']), 1)
+        Ha_p = round(100 - percentage(metrics['non_hallu_score'], metrics['non_hallu_num']), 1)
         print("Generative Task:")
         print("CHAIR:\t\t", CHAIR)
         print("Cover:\t\t", Cover)
@@ -289,9 +335,9 @@ def main(args):
         print("Cog:\t\t", Ha, "\n")
 
     if dimension['de'] and dimension['da'] and dimension['dr']:
-        Accuracy = round(metrics['qa_correct_score'] / metrics['qa_correct_num'] * 100, 1)
-        Precision = round(metrics['qa_ans_no_score'] / metrics['qa_ans_no_num'] * 100, 1)
-        Recall = round(metrics['qa_no_score'] / metrics['qa_no_num'] * 100, 1)
+        Accuracy = round(percentage(metrics['qa_correct_score'], metrics['qa_correct_num']), 1)
+        Precision = round(percentage(metrics['qa_ans_no_score'], metrics['qa_ans_no_num']), 1)
+        Recall = round(percentage(metrics['qa_no_score'], metrics['qa_no_num']), 1)
         F1 = round(2 * (Precision/100) * (Recall/100) / ((Precision/100) + (Recall/100) + 0.0001) * 100, 1)
         print("Descriminative Task:")
         print("Accuracy:\t", Accuracy)
@@ -300,9 +346,9 @@ def main(args):
         print("F1:\t\t", F1, "\n")
 
     if dimension['de']:
-        hallucination_Accuracy = round(metrics['ha_qa_correct_score'] / metrics['ha_qa_correct_num'] * 100, 1)
-        hallucination_Precision = round(metrics['ha_qa_ans_no_score'] / metrics['ha_qa_ans_no_num'] * 100, 1)
-        hallucination_Recall = round(metrics['ha_qa_no_score'] / metrics['ha_qa_no_num'] * 100, 1)
+        hallucination_Accuracy = round(percentage(metrics['ha_qa_correct_score'], metrics['ha_qa_correct_num']), 1)
+        hallucination_Precision = round(percentage(metrics['ha_qa_ans_no_score'], metrics['ha_qa_ans_no_num']), 1)
+        hallucination_Recall = round(percentage(metrics['ha_qa_no_score'], metrics['ha_qa_no_num']), 1)
         hallucination_F1 = round(2 * (hallucination_Precision/100) * (hallucination_Recall/100) / ((hallucination_Precision/100) + (hallucination_Recall/100) + 0.001) * 100, 1)
         print("Exsitence:")
         print("Accuracy:\t", hallucination_Accuracy)
@@ -311,21 +357,21 @@ def main(args):
         print("F1:\t\t", hallucination_F1, "\n")
 
     if dimension['da']:
-        attr_Accuracy = round((metrics['as_qa_correct_score'] + metrics['an_qa_correct_score'] + metrics['aa_qa_correct_score']) / (metrics['as_qa_correct_num'] + metrics['an_qa_correct_num'] + metrics['aa_qa_correct_num']) * 100, 1)
-        attr_Precision = round((metrics['as_qa_ans_no_score'] + metrics['an_qa_ans_no_score'] + metrics['aa_qa_ans_no_score']) / (metrics['as_qa_ans_no_num'] + metrics['an_qa_ans_no_num'] + metrics['aa_qa_ans_no_num']) * 100, 1)
-        attr_Recall = round((metrics['as_qa_no_score'] + metrics['an_qa_no_score'] + metrics['aa_qa_no_score']) / (metrics['as_qa_no_num'] + metrics['an_qa_no_num'] + metrics['aa_qa_no_num']) * 100, 1)
+        attr_Accuracy = round(percentage((metrics['as_qa_correct_score'] + metrics['an_qa_correct_score'] + metrics['aa_qa_correct_score']), (metrics['as_qa_correct_num'] + metrics['an_qa_correct_num'] + metrics['aa_qa_correct_num'])), 1)
+        attr_Precision = round(percentage((metrics['as_qa_ans_no_score'] + metrics['an_qa_ans_no_score'] + metrics['aa_qa_ans_no_score']), (metrics['as_qa_ans_no_num'] + metrics['an_qa_ans_no_num'] + metrics['aa_qa_ans_no_num'])), 1)
+        attr_Recall = round(percentage((metrics['as_qa_no_score'] + metrics['an_qa_no_score'] + metrics['aa_qa_no_score']), (metrics['as_qa_no_num'] + metrics['an_qa_no_num'] + metrics['aa_qa_no_num'])), 1)
         attr_F1 = round(2 * (attr_Precision/100) * (attr_Recall/100) / ((attr_Precision/100) + (attr_Recall/100) + 0.0001) * 100, 1)
-        state_Accuracy = round(metrics['as_qa_correct_score'] / metrics['as_qa_correct_num'] * 100, 1)
-        state_Precision = round(metrics['as_qa_ans_no_score'] / metrics['as_qa_ans_no_num'] * 100, 1)
-        state_Recall = round(metrics['as_qa_no_score'] / metrics['as_qa_no_num'] * 100, 1)
+        state_Accuracy = round(percentage(metrics['as_qa_correct_score'], metrics['as_qa_correct_num']), 1)
+        state_Precision = round(percentage(metrics['as_qa_ans_no_score'], metrics['as_qa_ans_no_num']), 1)
+        state_Recall = round(percentage(metrics['as_qa_no_score'], metrics['as_qa_no_num']), 1)
         state_F1 = round(2 * (state_Precision/100) * (state_Recall/100) / ((state_Precision/100) + (state_Recall/100) + 0.0001) * 100, 1)
-        number_Accuracy = round(metrics['an_qa_correct_score'] / metrics['an_qa_correct_num'] * 100, 1)
-        number_Precision = round(metrics['an_qa_ans_no_score'] / metrics['an_qa_ans_no_num'] * 100, 1)
-        number_Recall = round(metrics['an_qa_no_score'] / metrics['an_qa_no_num'] * 100, 1)
+        number_Accuracy = round(percentage(metrics['an_qa_correct_score'], metrics['an_qa_correct_num']), 1)
+        number_Precision = round(percentage(metrics['an_qa_ans_no_score'], metrics['an_qa_ans_no_num']), 1)
+        number_Recall = round(percentage(metrics['an_qa_no_score'], metrics['an_qa_no_num']), 1)
         number_F1 = round(2 * (number_Precision/100) * (number_Recall/100) / ((number_Precision/100) + (number_Recall/100) + 0.0001) * 100, 1)
-        action_Accuracy = round(metrics['aa_qa_correct_score'] / metrics['aa_qa_correct_num'] * 100, 1)
-        action_Precision = round(metrics['aa_qa_ans_no_score'] / metrics['aa_qa_ans_no_num'] * 100, 1)
-        action_Recall = round(metrics['aa_qa_no_score'] / metrics['aa_qa_no_num'] * 100, 1)
+        action_Accuracy = round(percentage(metrics['aa_qa_correct_score'], metrics['aa_qa_correct_num']), 1)
+        action_Precision = round(percentage(metrics['aa_qa_ans_no_score'], metrics['aa_qa_ans_no_num']), 1)
+        action_Recall = round(percentage(metrics['aa_qa_no_score'], metrics['aa_qa_no_num']), 1)
         action_F1 = round(2 * (action_Precision/100) * (action_Recall/100) / ((action_Precision/100) + (action_Recall/100) + 0.0001) * 100, 1)
         print("Attribute:")
         print("Accuracy:\t", attr_Accuracy)
@@ -349,9 +395,9 @@ def main(args):
         print("F1:\t\t", action_F1, "\n")
 
     if dimension['dr']:
-        relation_Accuracy = round(metrics['asso_qa_correct_score'] / metrics['asso_qa_correct_num'] * 100, 1)
-        relation_Precision = round(metrics['asso_qa_ans_no_score'] / metrics['asso_qa_ans_no_num'] * 100, 1)
-        relation_Recall = round(metrics['asso_qa_no_score'] / metrics['asso_qa_no_num'] * 100, 1)
+        relation_Accuracy = round(percentage(metrics['asso_qa_correct_score'], metrics['asso_qa_correct_num']), 1)
+        relation_Precision = round(percentage(metrics['asso_qa_ans_no_score'], metrics['asso_qa_ans_no_num']), 1)
+        relation_Recall = round(percentage(metrics['asso_qa_no_score'], metrics['asso_qa_no_num']), 1)
         relation_F1 = round(2 * (relation_Precision/100) * (relation_Recall/100) / ((relation_Precision/100) + (relation_Recall/100) + 0.0001) * 100, 1)
         print("Relation:")
         print("Accuracy:\t", relation_Accuracy)

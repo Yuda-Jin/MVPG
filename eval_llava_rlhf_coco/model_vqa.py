@@ -1,41 +1,36 @@
 import argparse
-import torch
-import os
 import json
-from tqdm import tqdm
-import shortuuid
+import math
+import os
 
-from llava.constants import (
-    IMAGE_TOKEN_INDEX,
-    DEFAULT_IMAGE_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IM_END_TOKEN,
-)
+import shortuuid
+import torch
+from tqdm import tqdm
+
+from llava.constants import (IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN,
+    DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN)
 from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init
-from llava.mm_utils import (
-    tokenizer_image_token,
-    get_model_name_from_path,
-    KeywordsStoppingCriteria,
-)
-from PIL import Image
-import math
+from llava.mm_utils import tokenizer_image_token, get_model_name_from_path
+
+from mvpg_run.eval_batch import (BoundedImageCache, generate_equal_length_batch,
+    ordered_batch_map, validate_batch_size)
+from mvpg_run.llava_inference import process_image
 
 
 def split_list(lst, n):
-    """Split a list into n (roughly) equal-sized chunks"""
-    chunk_size = math.ceil(len(lst) / n)  # integer division
-    return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
+    """Split a list into n (roughly) equal-sized chunks."""
+    chunk_size = math.ceil(len(lst) / n)
+    return [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
 def get_chunk(lst, n, k):
-    chunks = split_list(lst, n)
-    return chunks[k]
+    return split_list(lst, n)[k]
 
 
 def eval_model(args):
-    # Model
+    validate_batch_size(args.batch_size)
     disable_torch_init()
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
@@ -43,133 +38,68 @@ def eval_model(args):
     if args.use_qlora:
         from mvpg_run.llava_inference import load_lora_for_inference
         model, tokenizer, image_processor, compute_dtype = load_lora_for_inference(
-            model_path, args.qlora_path, device="cuda", precision="bf16"
-        )
+            model_path, args.qlora_path, device="cuda", precision="bf16")
     else:
         tokenizer, model, image_processor, context_len = load_pretrained_model(
-            model_path, args.model_base, model_name
-        )
+            model_path, args.model_base, model_name)
     model.eval()
 
-    questions = [
-        json.loads(q) for q in open(os.path.expanduser(args.question_file), "r")
-    ]
+    with open(os.path.expanduser(args.question_file), "r") as source:
+        questions = [json.loads(q) for q in source]
     questions = get_chunk(questions, args.num_chunks, args.chunk_idx)
-    answers_file = os.path.expanduser(args.answers_file)
-    os.makedirs(os.path.dirname(answers_file), exist_ok=True)
-    ans_file = open(answers_file, "w")
-    for line in tqdm(questions):
-        idx = line["question_id"]
-        image_file = line["image"]
-        # image_file = 'COCO_val2014_' + image_file
-        qs = line["text"]
-        cur_prompt = qs
-        if model.config.mm_use_im_start_end:
-            qs = (
-                DEFAULT_IM_START_TOKEN
-                + DEFAULT_IMAGE_TOKEN
-                + DEFAULT_IM_END_TOKEN
-                + "\n"
-                + qs
-            )
-        else:
-            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
-        if args.test_prompt:
-            qs += args.test_prompt
-        conv = conv_templates[args.conv_mode].copy()
-        conv.append_message(conv.roles[0], qs)
-        conv.append_message(conv.roles[1], None)
-        prompt = conv.get_prompt()
 
-        input_ids = (
-            tokenizer_image_token(
-                prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors="pt"
-            )
-            .unsqueeze(0)
-            .cuda()
-        )
+    def prepared():
+        for line in questions:
+            qs = line["text"]
+            image_token = DEFAULT_IMAGE_TOKEN
+            if model.config.mm_use_im_start_end:
+                image_token = DEFAULT_IM_START_TOKEN + image_token + DEFAULT_IM_END_TOKEN
+            qs = image_token + "\n" + qs
+            if args.test_prompt:
+                qs += args.test_prompt
+            conv = conv_templates[args.conv_mode].copy()
+            conv.append_message(conv.roles[0], qs)
+            conv.append_message(conv.roles[1], None)
+            yield {
+                "line": line,
+                "input_ids": tokenizer_image_token(conv.get_prompt(), tokenizer,
+                    IMAGE_TOKEN_INDEX, return_tensors="pt"),
+                "image_path": os.path.join(args.image_folder, line["image"]),
+                "stop_str": conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2,
+                "max_new_tokens": 64 if args.short_eval else 1024,
+            }
+
+    def load_image(path):
         try:
-            image = Image.open(os.path.join(args.image_folder, image_file))
-        except Exception as e:
-            print(e)
-            image = Image.open(os.path.join(args.image_folder.replace('train2017', 'val2017'), image_file))
+            return process_image(image_processor, path, args.image_aspect_ratio)
+        except OSError as exc:
+            fallback = path.replace("train2017", "val2017")
+            if fallback == path:
+                raise
+            print(exc)
+            image = process_image(image_processor, fallback, args.image_aspect_ratio)
             print("retry val2017 file succeed")
-        if args.image_aspect_ratio == "pad":
-            image = image.convert("RGB")
+            return image
 
-            def expand2square(pil_img, background_color):
-                # print(background_color)
-                width, height = pil_img.size
-                if width == height:
-                    return pil_img
-                elif width > height:
-                    result = Image.new(pil_img.mode, (width, width), background_color)
-                    result.paste(pil_img, (0, (width - height) // 2))
-                    return result
-                else:
-                    result = Image.new(pil_img.mode, (height, height), background_color)
-                    result.paste(pil_img, ((height - width) // 2, 0))
-                    return result
+    cache = BoundedImageCache(load_image, max_size=32)
+    def predict(batch):
+        return generate_equal_length_batch(model, tokenizer, batch, cache,
+            device="cuda", compute_dtype=compute_dtype, temperature=args.temperature,
+            top_p=args.top_p, num_beams=args.num_beams)
 
-            image = expand2square(
-                image, tuple(int(x * 255) for x in image_processor.image_mean)
-            )
-        image_tensor = image_processor.preprocess(image, return_tensors="pt")[
-            "pixel_values"
-        ][0]
-
-        stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
-        keywords = [stop_str]
-        stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
-
-        model.config.use_cache = True
-        model.config.cache_shape = (2048,)
-        with torch.inference_mode():
-            output_ids = model.generate(
-                input_ids=input_ids,
-                images=image_tensor.unsqueeze(0).to(dtype=compute_dtype).cuda(),
-                do_sample=True if args.temperature > 0 else False,
-                temperature=args.temperature if args.temperature > 0 else 1.0,
-                top_p=args.top_p,
-                num_beams=args.num_beams,
-                # no_repeat_ngram_size=3,
-                max_new_tokens=64 if args.short_eval else 1024,
-                # stopping_criteria=[stopping_criteria],
-                use_cache=True,
-            )
-
-        input_token_len = input_ids.shape[1]
-        n_diff_input_output = (
-            (input_ids != output_ids[:, :input_token_len]).sum().item()
-        )
-        if n_diff_input_output > 0:
-            print(
-                f"[Warning] {n_diff_input_output} output_ids are not the same as the input_ids"
-            )
-        outputs = tokenizer.batch_decode(
-            output_ids[:, input_token_len:], skip_special_tokens=True
-        )[0]
-        outputs = outputs.strip()
-        if outputs.endswith(stop_str):
-            outputs = outputs[: -len(stop_str)]
-        outputs = outputs.strip()
-
-        ans_id = shortuuid.uuid()
-        ans_file.write(
-            json.dumps(
-                {
-                    "question_id": idx,
-                    "prompt": cur_prompt,
-                    "text": outputs,
-                    "answer_id": ans_id,
-                    "model_id": model_name,
-                    "metadata": {},
-                }
-            )
-            + "\n"
-        )
-        ans_file.flush()
-    ans_file.close()
+    results = ordered_batch_map(prepared(), predict, batch_size=args.batch_size,
+        batch_key=lambda item: (item["input_ids"].numel(), item["max_new_tokens"]))
+    answers_file = os.path.expanduser(args.answers_file)
+    os.makedirs(os.path.dirname(answers_file) or ".", exist_ok=True)
+    with open(answers_file, "x") as answers:
+        for item, text in tqdm(results, total=len(questions)):
+            line = item["line"]
+            answers.write(json.dumps({
+                "question_id": line["question_id"], "prompt": line["text"],
+                "text": text, "answer_id": shortuuid.uuid(),
+                "model_id": model_name, "metadata": {},
+            }) + "\n")
+            answers.flush()
 
 
 if __name__ == "__main__":
@@ -185,18 +115,15 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top_p", type=float, default=None)
     parser.add_argument("--num_beams", type=int, default=1)
+    parser.add_argument("--batch-size", type=int, default=1,
+                        help="Equal-token-length batches; default retains singleton evaluation")
     parser.add_argument("--use-qlora", type=bool, default=False)
     parser.add_argument("--qlora-path", type=str, default="")
     parser.add_argument("--short_eval", type=bool, default=False)
     parser.add_argument("--image_aspect_ratio", type=str, default="pad")
-    parser.add_argument(
-        "--test-prompt",
-        type=str,
-        default="\nAnswer the question using a single word or phrase.",
-    )
+    parser.add_argument("--test-prompt", type=str,
+                        default="\nAnswer the question using a single word or phrase.")
     args = parser.parse_args()
-
     if os.path.exists(args.answers_file):
-        print(f"{args.answers_file} already exists. Please delete it first.")
-        exit(1)
+        parser.exit(1, f"{args.answers_file} already exists. Please use a new output path.\n")
     eval_model(args)

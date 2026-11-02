@@ -64,8 +64,12 @@ python -m mvpg_run.claim_feedback train \
 
 DiscoSG 使用[官方仓库](https://github.com/ShaoqLin/DiscoSG)，适配参考提交
 `d2be2768ddc80199ab56f38cf50c132351a8d248`，记录实际 checkout 版本。
-需要自行提供种子模型和训练好的 refiner（包括 `model_info.json`、`classifier.pt` 和权重）；
-公开源码不等于已取得完整 refiner 权重。可在独立 DiscoSG 环境执行分解，以 JSONL 交接。
+种子模型可从 `lizhuang144/flan-t5-base-VG-factual-sg` 获取；官方发布的
+`sqlinn/DiscoSG-Refiner-Large-t5-only` 提供兼容当前源码的 T5 权重和 `classifier.pt`。
+还需从 `sqlinn/DiscoSG-Refiner-Large` 取得 `model_info.json` 和 tokenizer 文件，组成完整本地 refiner。
+完整 `Large` 检查点的封装键与当前加载器不同，不能直接替代 `t5-only`。
+离线运行时将 `model_info.json` 的 `base_model_name` 指向本地同一 tokenizer，并保留上游文件和修改记录。
+可在独立 DiscoSG 环境执行分解，以 JSONL 交接。
 其图没有原文偏移；本实现只接受唯一、明确、非否定/非不确定的实体提及，并保留完整图用于审计。
 属性与关系不会冒充已支持的训练类型。已有来源可靠的声明可直接写入相同 schema，跳过 `decompose`。
 
@@ -74,6 +78,7 @@ DiscoSG 使用[官方仓库](https://github.com/ShaoqLin/DiscoSG)，适配参考
 `--audit-loss-change` 增加一次前向，记录更新后选中位置的正负 NLL，有额外成本。
 `final/` 和可选中间检查点保存标准 LoRA adapter；可用 `generate --adapter-path .../final` 自由生成，
 或接入仓库已有 LLaVA 评估器。`--checkpoint-every` 按尝试回答数计，`--max-steps` 包含跳过的回答。
+`--max-updates 100` 则要求实际成功更新 100 次；若数据或尝试预算耗尽，会保存部分 adapter、标记 `incomplete` 并返回错误。
 `--adapter-path` 是从已有 adapter 开始一轮新训练，不恢复旧运行的游标。
 
 比较五种 `--mode` 时复用同一个反馈文件、基座、LoRA 配置和 seed，并使用不同输出目录。

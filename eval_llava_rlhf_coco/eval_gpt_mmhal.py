@@ -1,9 +1,10 @@
-import openai
 import argparse
 import json
 import time
 import os
-from openai import OpenAI
+import hashlib
+import re
+from pathlib import Path
 
 template = '''Please act as an impartial and objective judge and evaluate the quality of the response provided by a Large Multimodal Model (LMM) to the user question. Your evaluation should be mainly based on whether the response is informative, and whether the response contains any hallucination. Hallucination, in this context, refers to a situation where the LMM generates a response that includes information not present or implied in the image or previous conversation. A hallucination could be a false claim about an object, action, emotion, or any other detail that is not grounded in the image.
 
@@ -76,90 +77,121 @@ To evaluate the LMM responses, first, begin your evaluation by providing a short
 '''
 
 
-if __name__ == '__main__':
+def parse_rating(response):
+    if not isinstance(response, str):
+        raise ValueError("MMHal judge returned no text")
+    ratings = {int(value) for value in re.findall(r"\brating\s*:\s*([0-6])\b", response, re.I)}
+    if len(ratings) != 1:
+        raise ValueError("MMHal judge must return exactly one unambiguous Rating: 0..6")
+    return ratings.pop()
+
+
+def save_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def judge_request_options(model):
+    """Opt in to DeepSeek's non-thinking mode without changing GPT requests."""
+    thinking = os.getenv("JUDGE_THINKING", "").strip().lower()
+    if not str(model).lower().startswith("deepseek-") or not thinking:
+        return {}
+    if thinking != "disabled":
+        raise ValueError("JUDGE_THINKING must be unset or disabled")
+    # DeepSeek documents this OpenAI SDK extension explicitly.
+    return {"extra_body": {"thinking": {"type": "disabled"}}}
+
+
+def ask_judge(client, content, model, max_retries=3):
+    request_options = judge_request_options(model)
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model=model, messages=[{"role": "user", "content": content}], temperature=0.0,
+                **request_options,
+            )
+            text = response.choices[0].message.content
+            parse_rating(text)
+            return text
+        except Exception as exc:
+            status = getattr(exc, "status_code", None)
+            fatal = status is not None and 400 <= status < 500 and status not in (408, 409, 429)
+            if fatal or attempt + 1 == max_retries:
+                raise RuntimeError(
+                    f"MMHal judging failed ({type(exc).__name__}, status={status}); no score was assigned"
+                ) from exc
+            time.sleep(min(2 ** attempt, 10))
+    raise ValueError("max_retries must be positive")
+
+
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--response', type=str, default='responses/idefics_80b.json', help='response file containing images, questions, and model responses')
-    parser.add_argument('--evaluation', type=str, default=None, help='GPT-4 evaluation results to be saved')
+    parser.add_argument('--response', type=str, default='responses/idefics_80b.json')
+    parser.add_argument('--evaluation', type=str, required=True)
     parser.add_argument('--api-key', type=str, default=None)
-    parser.add_argument('--gpt-model', type=str, default='gpt-4-0314')
+    parser.add_argument('--gpt-model', type=str, default=os.getenv('GPT_MODEL', 'gpt-4'))
+    parser.add_argument('--max-retries', type=int, default=3)
+    parser.add_argument('--timeout', type=float, default=60)
     args = parser.parse_args()
+    if args.max_retries < 1 or args.timeout <= 0:
+        raise ValueError("max-retries and timeout must be positive")
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    client = OpenAI(
-            base_url=os.getenv("OPENAI_ENDPOINT"),
-            api_key=api_key,
-        )
+    source = Path(args.response)
+    records = json.loads(source.read_text(encoding="utf-8"))
+    if not isinstance(records, list) or len(records) != 96:
+        raise ValueError("MMHal requires all 96 responses in official order")
+    for record in records:
+        for field in ('image_content', 'question', 'gt_answer', 'model_answer'):
+            if field not in record:
+                raise ValueError(f"MMHal response is missing {field}")
 
-    # load json file
-    with open(args.response, 'r') as f:
-        records = json.load(f)
+    evaluation = Path(args.evaluation)
+    metadata_path = evaluation.with_name(evaluation.name + ".meta.json")
+    metadata = {"response_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                "judge_model": args.gpt_model, "schema": "mmhal_ordered_reviews_v1",
+                "judge_request_options": judge_request_options(args.gpt_model)}
+    if evaluation.exists():
+        if not metadata_path.exists() or json.loads(metadata_path.read_text(encoding="utf-8")) != metadata:
+            raise ValueError("Existing MMHal reviews have different or missing provenance; choose a new output")
+        responses = json.loads(evaluation.read_text(encoding="utf-8"))
+        if not isinstance(responses, list) or len(responses) > len(records):
+            raise ValueError("Invalid MMHal resume file")
+        for response in responses:
+            parse_rating(response)
+    else:
+        responses = []
+        save_json(metadata_path, metadata)
 
-    assert len(records) == 96
+    if len(responses) < len(records):
+        from openai import OpenAI
+        api_key = args.api_key or os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is required for MMHal GPT scoring")
+        client = OpenAI(base_url=os.getenv("OPENAI_ENDPOINT") or os.getenv("OPENAI_BASE_URL") or None,
+                        api_key=api_key, timeout=args.timeout, max_retries=0)
+        for index in range(len(responses), len(records)):
+            record = records[index]
+            content = template.format(', '.join(record['image_content']), record['question'],
+                                      record['gt_answer'], record['model_answer'])
+            review = ask_judge(client, content, args.gpt_model, args.max_retries)
+            responses.append(review)
+            # Publish every valid answer atomically, including partial progress.
+            save_json(evaluation, responses)
+            print(f"MMHal reviewed {len(responses)}/{len(records)}", flush=True)
 
-    # ask GPT-4 to evaluate
-    responses = []
-    for i, record in enumerate(records):
-        image_content = ', '.join(record['image_content'])
-        input_text = template.format(image_content, record['question'], record['gt_answer'], record['model_answer'])
-        # print(input_text)
-
-        response = None
-        while response is None:
-            try:
-                response = client.chat.completions.create(
-                    model=args.gpt_model,
-                    messages=[
-                        {"role": "user", "content": input_text}
-                    ],
-                    temperature=0.0,
-                )
-            except Exception as e:
-                print(e)
-                time.sleep(10)
-                continue
-        print(i, response.choices[0].message.content, flush=True)
-        # print(i, response['choices'][0]['message']['content'], flush=True)
-        responses.append(response.choices[0].message.content)
-        time.sleep(1)
-
-        # if len(responses) > 5:
-        #     break
-
-    # save responses
-    if not os.path.exists(args.evaluation):
-        os.makedirs(args.evaluation[:args.evaluation.find("review-file")], exist_ok=True)
-
-    if args.evaluation is not None:
-        with open(args.evaluation, 'w') as f:
-            json.dump(responses, f, indent=2)
-
-    # analyze responses
-    scores = []
-    for i, response in enumerate(responses):
-        scores_found = []
-        for s in range(7):
-            if f'rating: {s}' in response.lower():
-                scores_found.append(s)
-        if len(scores_found) == 1:
-            scores.append(scores_found[0])
-        else:
-            print('Warning: multiple or zero scores found')
-            print(i, response)
-            scores.append(0)
-
-    hallucination = []
-    for s in scores:
-        if s >= 3:
-            hallucination.append(0)
-        else:
-            hallucination.append(1)
-
-    scores_each = [[] for _ in range(8)]
-    # assuming order of 96 questions is not changed
-    for i in range(96):
-        question_type = i % 8
-        scores_each[question_type].append(scores[i])
-
+    scores = [parse_rating(response) for response in responses]
+    if len(scores) != 96:
+        raise RuntimeError("Incomplete MMHal judging; no aggregate score is valid")
+    hallucination = [int(score < 3) for score in scores]
+    scores_each = [scores[index::8] for index in range(8)]
     print('Average score: {:.2f}'.format(sum(scores) / len(scores)))
     print('Hallucination rate: {:.2f}'.format(sum(hallucination) / len(hallucination)))
-    print('Average score for each question type:', ','.join([str(round(sum(scores_each[i]) / len(scores_each[i]), 2)) for i in range(8)]), flush=True)
+    print('Average score for each question type:', ','.join(
+        str(round(sum(values) / len(values), 2)) for values in scores_each), flush=True)
+
+
+if __name__ == '__main__':
+    main()
