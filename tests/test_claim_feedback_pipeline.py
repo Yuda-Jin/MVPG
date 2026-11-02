@@ -186,7 +186,7 @@ def test_audit_rejects_malformed_reason(tmp_path, reason_field):
         run(args)
 
 
-def make_fake_llava(truncate=False):
+def make_fake_llava(truncate=False, legacy=False):
     backend = LlavaBackend.__new__(LlavaBackend)
     backend.torch, backend.device = torch, "cpu"
     embedding, head = torch.nn.Embedding(128, 4), torch.nn.Linear(4, 128)
@@ -202,26 +202,44 @@ def make_fake_llava(truncate=False):
         decoder = Decoder()
         def get_model(self):
             return self.decoder
-        def prepare_inputs_labels_for_multimodal(self, ids, mask, labels, pixels):
+        def prepare_inputs_labels_for_multimodal(self, input_ids, attention_mask, labels, images):
             # Replace prompt's image placeholder with three feature positions.
+            ids = input_ids
             ids = torch.cat((ids[:, :1], torch.zeros((1, 3), dtype=torch.long), ids[:, 2:]), dim=1)
             labels = torch.cat((labels[:, :1], torch.full((1, 3), -100), labels[:, 2:]), dim=1)
             if truncate:
                 ids, labels = ids[:, :-1], labels[:, :-1]
             return embedding(ids), labels, torch.ones_like(labels)
     backend.base = Base()
+    if legacy:
+        original = backend.base.prepare_inputs_labels_for_multimodal
+        def legacy_prepare(input_ids, attention_mask, past_key_values, labels, images):
+            assert past_key_values is None
+            embeds, expanded, mask = original(input_ids, attention_mask, labels, images)
+            return None, mask, None, embeds, expanded
+        backend.base.prepare_inputs_labels_for_multimodal = legacy_prepare
     backend._inputs = lambda r, root=None: (torch.tensor([[1, 0, 2]]), torch.zeros(1))
     return backend
 
 
-def test_expanded_multimodal_labels_and_shift_are_checked():
-    backend = make_fake_llava()
+@pytest.mark.parametrize("legacy", [False, True])
+def test_expanded_multimodal_labels_and_shift_are_checked(legacy):
+    backend = make_fake_llava(legacy=legacy)
     nll = backend.token_nll({}, [99, 97, 116])
     assert nll.shape == (3,)
     nll.sum().backward()
     assert backend.base.decoder.mix.weight.grad is not None
     with pytest.raises(ValueError, match="truncated"):
-        make_fake_llava(truncate=True).token_nll({}, [99, 97, 116])
+        make_fake_llava(truncate=True, legacy=legacy).token_nll({}, [99, 97, 116])
     backend.base.config.max_position_embeddings = 3
     with pytest.raises(ValueError, match="exceeds"):
         backend.token_nll({}, [99, 97, 116])
+
+
+def test_model_internal_type_error_is_not_retried_or_hidden():
+    from mvpg_run.claim_feedback.backends import prepare_multimodal
+    class Broken:
+        def prepare_inputs_labels_for_multimodal(self, input_ids, attention_mask, labels, images):
+            raise TypeError("failure inside model")
+    with pytest.raises(TypeError, match="failure inside model"):
+        prepare_multimodal(Broken(), None, None, None, None)

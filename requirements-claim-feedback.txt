@@ -1,5 +1,6 @@
 # Additional dependencies on top of the repository's patched LLaVA environment.
 # Base torch/transformers/sentencepiece versions remain in environment.yaml.
 # DiscoSG may require a separate environment; communicate through JSONL.
-peft==0.5.0
+# Verified with the cloud LLaVA environment (transformers 4.34.1).
+peft==0.6.2
 pytest>=7.4,<10

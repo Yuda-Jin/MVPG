@@ -8,6 +8,8 @@ LLaVA environment described in the repository README.
 from __future__ import annotations
 
 from argparse import Namespace
+from collections.abc import Mapping
+import copy
 import os
 from pathlib import Path
 
@@ -44,9 +46,26 @@ def load_model_and_tokenizer(model_name, bits, fp16, bf16, device):
     clip_dir = os.environ.get("LLAVA_CLIP_DIR")
     if clip_dir is None:
         clip_dir = str(Path(model_name).resolve().parent / "clip-vit-large-patch14-336")
-    if Path(clip_dir).is_dir():
+    clip_path = Path(clip_dir).expanduser()
+    if clip_path.is_dir():
+        clip_dir = str(clip_path.resolve())
         config = LlavaLlamaForCausalLM.config_class.from_pretrained(model_name)
         config.mm_vision_tower = clip_dir
+        # The bundled patch rebuilds mm_vision_tower from image_checkpoint in
+        # LlavaMetaModel.__init__. Update both representations in memory so a
+        # stale training-machine path cannot override the local CLIP directory.
+        checkpoint = getattr(config, "image_checkpoint", None)
+        if checkpoint is None:
+            checkpoint = {}
+        elif not isinstance(checkpoint, Mapping):
+            raise ValueError("config.image_checkpoint must be a mapping")
+        checkpoint = copy.deepcopy(dict(checkpoint))
+        clip_target = "llava.model.multimodal_encoder.clip_encoder.CLIPVisionTower"
+        if checkpoint.get("_target_", clip_target) != clip_target:
+            raise ValueError("Local CLIP override is incompatible with the configured non-CLIP vision target")
+        checkpoint.update(_target_=clip_target,
+                          download_method_for_image_model="local", image_model=clip_dir)
+        config.image_checkpoint = checkpoint
     else:
         config = None
     model = LlavaLlamaForCausalLM.from_pretrained(

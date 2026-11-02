@@ -5,6 +5,36 @@ from pathlib import Path
 from typing import Any
 
 
+def prepare_multimodal(base, input_ids, attention_mask, labels, images):
+    """Normalize the two LLaVA-1.5 interfaces used by the repo and cloud host.
+
+    The repository runtime patch returns (embeddings, labels, mask); existing
+    LLaVA-1.5 installations return (ids, mask, cache, embeddings, labels).
+    Inspect the signature instead of swallowing TypeError from model internals.
+    """
+    import inspect
+    prepare = base.prepare_inputs_labels_for_multimodal
+    parameters = inspect.signature(prepare).parameters
+    kwargs = dict(input_ids=input_ids, attention_mask=attention_mask,
+                  labels=labels, images=images)
+    legacy = "past_key_values" in parameters
+    if "position_ids" in parameters:
+        raise ValueError("Unsupported multimodal position_ids API; expected the repository patch or LLaVA-1.5 five-item API")
+    if legacy:
+        kwargs["past_key_values"] = None
+    prepared = prepare(**kwargs)
+    if not isinstance(prepared, (tuple, list)):
+        raise ValueError("Multimodal preparation must return a tuple or list")
+    if legacy and len(prepared) == 5:
+        ids, mask, cache, embeds, expanded = prepared
+        if ids is not None or cache is not None:
+            raise ValueError("Expected expanded image embeddings without an autoregressive cache")
+        return embeds, expanded, mask
+    if not legacy and len(prepared) == 3:
+        return prepared
+    raise ValueError("Unsupported LLaVA multimodal preparation return format")
+
+
 def decode_exact(tokenizer, ids):
     return tokenizer.decode(list(ids), skip_special_tokens=True,
                             clean_up_tokenization_spaces=False)
@@ -189,15 +219,15 @@ class LlavaBackend:
         response = torch.tensor([ids], dtype=torch.long, device=self.device)
         full = torch.cat((query, response), dim=1)
         labels = torch.cat((torch.full_like(query, -100), response), dim=1)
-        # Known patched interface returns embeddings, labels, attention mask.
+        # Both cloud LLaVA-1.5 and the repository patch expand image labels here.
         with torch.no_grad():
-            prepared = self.base.prepare_inputs_labels_for_multimodal(
+            embeds, expanded, attention = prepare_multimodal(self.base,
                 full, torch.ones_like(full), labels, pixels)
-        if len(prepared) != 3:
-            raise ValueError("Unsupported LLaVA multimodal preparation API; use the repository patch")
-        embeds, expanded, attention = prepared
-        if expanded is None or embeds.ndim != 3 or expanded.shape != embeds.shape[:2]:
+        if (not isinstance(embeds, torch.Tensor) or not isinstance(expanded, torch.Tensor)
+                or embeds.ndim != 3 or expanded.shape != embeds.shape[:2]):
             raise ValueError("Invalid multimodal embedding/label shapes")
+        if attention is not None and attention.shape != expanded.shape:
+            raise ValueError("Invalid expanded multimodal attention shape")
         positions = (expanded[0] != -100).nonzero(as_tuple=True)[0]
         if positions.numel() != len(ids) or not torch.equal(expanded[0, positions], response[0]):
             raise ValueError("Response labels were truncated or changed during image expansion")

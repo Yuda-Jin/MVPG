@@ -2,7 +2,9 @@
 
 本分支实现当前 story：图像与问题 → MLLM 生成回答 → DiscoSG 申明分解 → 冻结视觉支持核验 → 原文 token 对齐 → 正负梯度调制 → LLM LoRA 更新。训练不要求外部完整修订回答或响应级偏好对，内部仍使用自动产生的正负伪反馈和校准阈值。
 
-完整方法边界、JSONL 格式、五种更新对照和运行命令见 [声明级视觉反馈说明](mvpg_run/claim_feedback/README.md)。当前已完成离线接口与合成机制验证，真实权重训练和 benchmark 效果尚待验证。
+完整方法边界、JSONL 格式、五种更新对照和运行命令见 [声明级视觉反馈说明](mvpg_run/claim_feedback/README.md)。
+
+7B/13B 的真实训练、检查点回读及显存诊断已通过，具体输入边界、数值限制和复现路径见 [云端训练调试报告](docs/server_training_report.md)；benchmark 效果仍待验证。
 
 ## 目录与入口
 
