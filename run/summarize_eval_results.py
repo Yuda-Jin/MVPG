@@ -1,4 +1,4 @@
-# 从 eval_all_metrics_mvpg.sh 的全程运行日志中解析各基准分数，
+# 从当前 LoRA 评估启动脚本的全程运行日志中解析各基准分数，
 # 汇总为 summary_${MODEL_SUFFIX}.json + summary.csv（append，按 model_suffix 去重，
 # 便于多个 ckpt 的横向对比）。
 #
@@ -108,7 +108,7 @@ def upsert_csv(out_root, model_suffix, row):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--log", type=str, required=True, help="eval_all_metrics_mvpg.sh 的全程日志")
+    parser.add_argument("--log", type=str, required=True, help="eval_all_metrics.sh 的全程日志")
     parser.add_argument("--out-root", type=str, required=True)
     parser.add_argument("--model-suffix", type=str, required=True)
     args = parser.parse_args()

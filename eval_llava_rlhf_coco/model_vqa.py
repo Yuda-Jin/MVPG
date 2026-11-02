@@ -10,7 +10,6 @@ from llava.constants import (
     DEFAULT_IMAGE_TOKEN,
     DEFAULT_IM_START_TOKEN,
     DEFAULT_IM_END_TOKEN,
-    DEFAULT_IMAGE_PATCH_TOKEN,
 )
 from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
@@ -20,18 +19,8 @@ from llava.mm_utils import (
     get_model_name_from_path,
     KeywordsStoppingCriteria,
 )
-from llava.model import *
 from PIL import Image
 import math
-try:
-    from peft import PeftModel
-except ImportError:  # MVPG 评测路径（--mm-projector）不需要 peft
-    PeftModel = None
-
-from transformers import (
-    AutoTokenizer,
-    BitsAndBytesConfig,
-)
 
 
 def split_list(lst, n):
@@ -44,32 +33,6 @@ def get_chunk(lst, n, k):
     chunks = split_list(lst, n)
     return chunks[k]
 
-def loading_vision_tower_parameter(Path, model):
-    import json
-    import torch
-    Path = Path.rstrip('/')
-    try:
-        if os.path.exists(f'{Path}/pytorch_model.bin.index.json'):
-            with open(f'{Path}/pytorch_model.bin.index.json', 'r') as f:
-                index_data = json.load(f)
-        elif os.path.exists(f'{Path}/model.safetensors.index.json'):
-            with open(f'{Path}/model.safetensors.index.json', 'r') as f:
-                index_data = json.load(f)
-        weight_map = index_data.get("weight_map", {})
-        vision_tower_weights = {k: v for k, v in weight_map.items() if "vision_tower" in k or "mm_projector" in k}
-
-        loaded_state_dict = {}
-        for weight_name, file_name in vision_tower_weights.items():
-            if file_name not in loaded_state_dict:
-                loaded_state_dict[file_name] = torch.load(f'{Path}/{file_name}')
-        model_state_dict = model.state_dict()
-        for weight_name, file_name in vision_tower_weights.items():
-            if weight_name in model_state_dict:
-                model_state_dict[weight_name] = loaded_state_dict[file_name][weight_name]
-                print(f"Loaded weight: {weight_name} from {file_name}")
-        model.load_state_dict(model_state_dict)
-    except Exception as e:
-        print(f"Error loading vision tower parameters: {e}")
 
 def eval_model(args):
     # Model
@@ -77,82 +40,16 @@ def eval_model(args):
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     compute_dtype = torch.float16
-    if getattr(args, "mm_projector", None):
-        # MVPG：base 模型 + 训练得到的 mm_projector 权重（与共享推理模块使用同一加载
-        # 路径：本地 CLIP 目录改写 + mlp2x_gelu 投影层结构，保证与训练权重键完全对齐）
-        from mvpg_run.llava_inference import load_model_and_tokenizer
-        model, tokenizer, image_processor, dtype = load_model_and_tokenizer(
-            model_path, 16, False, True, "cuda"
+    if args.use_qlora:
+        from mvpg_run.llava_inference import load_lora_for_inference
+        model, tokenizer, image_processor, compute_dtype = load_lora_for_inference(
+            model_path, args.qlora_path, device="cuda", precision="bf16"
         )
-        compute_dtype = dtype
-        model.get_model().mm_projector.load_state_dict(
-            torch.load(os.path.expanduser(args.mm_projector), map_location="cpu")
-        )
-        print(f"Loaded mm_projector from {args.mm_projector}")
-    elif args.use_qlora:
-        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
-
-        bits = 16
-        dtype = torch.bfloat16
-        compute_dtype = torch.bfloat16
-
-        print(torch.cuda.is_available())
-        print(torch.cuda.device_count())
-        print(model_path)
-        model = LlavaLlamaForCausalLM.from_pretrained(
-            model_path,
-            device_map={"": "cuda:0"},
-            torch_dtype=dtype,
-            # use_flash_attention_2=True,
-            load_in_4bit=(bits == 4),
-            load_in_8bit=(bits == 8),
-            # quantization_config=BitsAndBytesConfig(
-            #     load_in_4bit=(bits == 4),
-            #     load_in_8bit=(bits == 8),
-            #     llm_int8_threshold=6.0,
-            #     llm_int8_skip_modules=["mm_projector", "lm_head"],
-            #     llm_int8_has_fp16_weight=False,
-            #     bnb_4bit_compute_dtype=compute_dtype,
-            #     bnb_4bit_use_double_quant=True,
-            #     bnb_4bit_quant_type="nf4",
-            # ),
-        )
-        vision_tower = model.get_vision_tower()
-        if not vision_tower.is_loaded:
-            vision_tower.load_model()
-        vision_tower.to(device="cuda", dtype=compute_dtype)
-        loading_vision_tower_parameter(args.model_path, model)
-        image_processor = vision_tower.image_processor
-
-        if (os.path.exists(args.qlora_path.rstrip('/') + "/adapter_model.bin")
-            and os.path.exists(args.qlora_path.rstrip('/') + "/adapter_config.json")):
-            print(f"loading lora adpater form {args.qlora_path}")
-            model = PeftModel.from_pretrained(
-                model,
-                args.qlora_path,
-            )
-        else:
-            print(f"No lora adapter found in {args.qlora_path}, using the original model")
-
-        mm_use_im_start_end = getattr(model.config, "mm_use_im_start_end", False)
-        mm_use_im_patch_token = getattr(model.config, "mm_use_im_patch_token", True)
-        if mm_use_im_patch_token:
-            tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN], special_tokens=True)
-        if mm_use_im_start_end:
-            tokenizer.add_tokens(
-                [DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN], special_tokens=True
-            )
-        model.resize_token_embeddings(len(tokenizer))
-
-        # vision_tower = model.get_vision_tower()
-        # if not vision_tower.is_loaded:
-        #     vision_tower.load_model()
-        # vision_tower.to(device="cuda", dtype=compute_dtype)
-        # image_processor = vision_tower.image_processor
     else:
         tokenizer, model, image_processor, context_len = load_pretrained_model(
             model_path, args.model_base, model_name
         )
+    model.eval()
 
     questions = [
         json.loads(q) for q in open(os.path.expanduser(args.question_file), "r")
@@ -288,8 +185,6 @@ if __name__ == "__main__":
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top_p", type=float, default=None)
     parser.add_argument("--num_beams", type=int, default=1)
-    parser.add_argument("--mm-projector", type=str, default="",
-                        help="MVPG 训练的 mm_projector .bin；设置后忽略 qlora 走 MVPG 加载分支")
     parser.add_argument("--use-qlora", type=bool, default=False)
     parser.add_argument("--qlora-path", type=str, default="")
     parser.add_argument("--short_eval", type=bool, default=False)

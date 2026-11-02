@@ -14,7 +14,6 @@
 import json
 import math
 import sys
-import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # 项目根，便于直接运行本模块
@@ -239,42 +238,3 @@ class FGChip:
             dense_list.append(dense)
             valid_list.append(mask.bool())
         return torch.cat(dense_list, dim=0), torch.cat(valid_list, dim=0)
-
-
-_load_lock = threading.Lock()
-_cache = {"model": None}
-
-
-def load_fgclip(root, device):
-    """线程安全单例加载。"""
-    with _load_lock:
-        if _cache["model"] is None:
-            _cache["model"] = FGChip(root, device)
-        return _cache["model"]
-
-
-# 兼容旧 _load_fgclip 返回结构（fg 需支持如下键/字段）
-def _load_fgclip(root, device):
-    return load_fgclip(root, device)
-
-
-if __name__ == "__main__":
-    import sys
-
-    root = sys.argv[1] if len(sys.argv) > 1 else str(Path(__file__).resolve().parent.parent / "models/fgclip2-base-patch16")
-    fg = load_fgclip(root, "cpu")
-    print("FG-CLIP2 loaded:", fg.model.config.model_type)
-    d = Path("/root/autodl-tmp/data/SA1B_5_threshold/sa_1000")
-    paths = [str(d / f"sa_1000_r0c0.png"), str(d / f"sa_1000_r1c1.png"),
-             str(d / f"sa_1000_r0c1.png"), str(d / f"sa_1000_r1c0.png")]
-    img = fg.encode_image_paths(paths)
-    print("image feat", img.shape)
-    txt = fg.encode_texts([
-        "A wooden table with small figures.",
-        "A dark shadowed corner with a chair.",
-        "Textured pattern on the wall.",
-        "Bright object near the window.",
-        "A golden teapot sits on a wooden table beside the figures.",  # 负例
-    ])
-    sim = img @ txt.T
-    print("sim (rows=images, cols=texts):\n", sim.numpy().round(3))

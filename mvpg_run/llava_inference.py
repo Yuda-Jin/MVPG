@@ -1,7 +1,7 @@
 """Shared patched-LLaVA loading for claim feedback and hallucination evaluation.
 
-Kept independent of training recipes so legacy projector checkpoints can still
-be evaluated after the original MVPG/OPA training pipelines are removed.
+Kept independent of the claim-feedback optimizer so loading, prompting and image
+preprocessing have one implementation for the current scheme.
 Framework imports are lazy; calling this module's functions needs the patched
 LLaVA environment described in the repository README.
 """
@@ -84,6 +84,27 @@ def build_query(tokenizer, question):
     conv.append_message(conv.roles[0], DEFAULT_IMAGE_TOKEN + "\n" + question)
     conv.append_message(conv.roles[1], None)
     return tokenizer_image_token(conv.get_prompt(), tokenizer, return_tensors="pt")
+
+
+def load_lora_for_inference(model_name, adapter_path, *, device="cuda", precision="bf16"):
+    """Load the current scheme's adapter, failing if its checkpoint is missing.
+
+    Both PEFT serialization formats are accepted. Evaluation must never silently
+    substitute the unchanged base model for a misspelled adapter directory.
+    """
+    if precision not in ("fp32", "fp16", "bf16"):
+        raise ValueError("precision must be fp32, fp16 or bf16")
+    adapter = Path(adapter_path).expanduser().resolve()
+    if not (adapter / "adapter_config.json").is_file() or not any(
+            (adapter / name).is_file() for name in ("adapter_model.bin", "adapter_model.safetensors")):
+        raise FileNotFoundError(f"Incomplete LoRA checkpoint: {adapter}")
+    from peft import PeftModel
+    model, tokenizer, processor, dtype = load_model_and_tokenizer(
+        model_name, 16, precision == "fp16", precision == "bf16", device)
+    model = PeftModel.from_pretrained(model, str(adapter), is_trainable=False)
+    model.requires_grad_(False)
+    model.eval()
+    return model, tokenizer, processor, dtype
 
 
 def process_image(image_processor, img_path, image_aspect_ratio="pad"):

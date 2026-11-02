@@ -1,5 +1,4 @@
-"""Regression contracts for helpers extracted from the retired training recipe."""
-import json
+"""Offline contracts for the current scheme's shared LLaVA inference helpers."""
 import sys
 from types import ModuleType, SimpleNamespace
 
@@ -7,8 +6,8 @@ import pytest
 import torch
 from PIL import Image
 
-from data.grouped_caption_sources import DEFAULT_QUESTION, load_groups, resolve_group_images
-from mvpg_run.llava_inference import build_query, load_model_and_tokenizer, process_image
+from mvpg_run.llava_inference import (build_query, load_lora_for_inference,
+                                     load_model_and_tokenizer, process_image)
 
 
 @pytest.fixture
@@ -95,15 +94,21 @@ def test_padding_preserves_image_content_and_mean_background(tmp_path):
     assert process_image(Processor(), image).shape == (3, 4, 4)
 
 
-def test_grouped_diagnostic_inputs_keep_existing_order_and_negative_pool(tmp_path):
-    group = tmp_path / "sample"
-    group.mkdir()
-    for name in ("sample.png", "sample_r1c0.jpg", "sample_r0c1.jpg", "unrelated.png"):
-        (group / name).touch()
-    (tmp_path / "neg_captions.json").write_text(json.dumps({
-        "sample": [" absent dog ", ""], "missing_dir": ["cat"]}), encoding="utf-8")
-    assert load_groups(tmp_path) == [{"gid": "sample", "negs": ["absent dog"]}]
-    main, tiles = resolve_group_images(tmp_path, "sample")
-    assert main == str(group / "sample.png")
-    assert tiles == [str(group / "sample_r0c1.jpg"), str(group / "sample_r1c0.jpg")]
-    assert DEFAULT_QUESTION == "Describe the image content in detail."
+@pytest.mark.parametrize("weights", ["adapter_model.bin", "adapter_model.safetensors"])
+def test_current_adapter_evaluation_accepts_both_formats(fake_llava, tmp_path, monkeypatch, weights):
+    model, tokenizer, _ = fake_llava
+    (tmp_path / "adapter_config.json").write_text("{}", encoding="utf-8")
+    (tmp_path / weights).touch()
+    def attach(base, path, is_trainable):
+        assert base is model and path == str(tmp_path.resolve())
+        assert is_trainable is False
+        return base
+    monkeypatch.setitem(sys.modules, "peft", SimpleNamespace(PeftModel=SimpleNamespace(from_pretrained=attach)))
+    loaded, tok, _, dtype = load_lora_for_inference("base", tmp_path, device="cpu", precision="fp32")
+    assert loaded is model and tok is tokenizer and dtype == torch.float32
+    assert not loaded.training and not any(p.requires_grad for p in loaded.parameters())
+
+
+def test_missing_adapter_does_not_fall_back_to_base(tmp_path):
+    with pytest.raises(FileNotFoundError, match="Incomplete LoRA checkpoint"):
+        load_lora_for_inference("nonexistent-base", tmp_path)

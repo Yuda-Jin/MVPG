@@ -9,15 +9,14 @@
 | 路径 | 用途 |
 |---|---|
 | `mvpg_run/claim_feedback/` | 当前训练链路：生成、分解、核验、审计及单回答 SGD 调制 |
-| `mvpg_run/llava_inference.py` | 新训练和保留的诊断脚本共用的 LLaVA 加载、prompt 与图像处理 |
+| `mvpg_run/llava_inference.py` | 当前训练和 LoRA 评估共用的 LLaVA 加载、prompt 与图像处理 |
 | `mvpg_run/fgclip_local.py`、`mvpg_run/fgclip2/` | 冻结 FG-CLIP2 后端及兼容实现 |
 | `eval_llava_rlhf_coco/` | 幻觉与能力评估代码、问题、标注及评分汇总 |
-| `data/` | 保留的视觉支持、幻觉反馈诊断和校准脚本 |
 | `run/` | 当前训练启动、保留的评估及模型准备脚本 |
 | `llava_setup/`、`utils/` | patched LLaVA 补丁及运行兼容依赖 |
 | `tests/` | 数据对齐、DiscoSG 接口、梯度调制和端到端离线检查 |
 
-旧 MVPG、OPA/OPA-DPO 训练链路及其专用数据准备与配置已清理。旧版本可从 Git 历史恢复；旧 projector 检查点的评估入口仍保留。
+旧 MVPG、OPA/OPA-DPO 训练链路，以及旧方案的分块、RCGR、子句/句子奖励实验、校准、负样本生成和历史结果已清理。旧版本可从 Git 历史恢复。当前方案的五种更新对照属于本方案的机制实验，继续保留。
 
 ## 快速检查
 
@@ -50,7 +49,7 @@ git -C llava_setup/LLaVA checkout 817a4af
 cp -R llava_setup/LLaVA/llava ./llava
 ```
 
-`llava/` 是本地运行依赖，不纳入本仓库追踪。补丁中的旧训练模块不作为当前分支入口；使用这里的生成、训练及评估脚本。补丁的推理组件需要 `utils/constants.py` 和 `utils/checkpoint_utils.py`，因此这些兼容模块保留。
+`llava/` 是本地运行依赖，不纳入本仓库追踪。补丁只保留当前运行所需的模型、视觉、prompt 和推理工具变更；旧训练、演示服务与历史评估结果补丁已移除。推理组件需要 `utils/constants.py` 和 `utils/checkpoint_utils.py`，因此这些兼容模块保留。
 
 模型下载与配置工具也保留：`run/prepare_basemodels.sh`、`base_operations/modify_base_model_config.py`。它们默认准备 LLaVA-1.5-7B/13B 和 CLIP，运行前检查路径与存储空间；自备模型可按实际目录配置。设置 `LLAVA_CLIP_DIR` 可指定本地视觉塔。DiscoSG 种子模型、训练好的 refiner 和视觉核验阈值的要求见方法说明，不能用切句或随机初始化替代。
 
@@ -63,11 +62,15 @@ cp -R llava_setup/LLaVA/llava ./llava
 - POPE：random、popular、adversarial 问题集及判别指标。
 - AMBER：生成/判别查询、标注和评估。
 - LLaVA-Bench qa90 与其他已有问答/能力评估入口。
-- `data/` 中的视觉支持、错图、反事实、细粒度幻觉与阈值诊断工具。
 
-`run/eval_all_metrics.sh` 保留 LoRA 评估流程；新训练生成的 `final/` 是 LoRA adapter，按脚本参数设置底模与适配器路径。`run/eval_all_metrics_mvpg.sh` 保留旧 `mm_projector` 检查点评估能力。`run/summarize_eval_results.py` 和评估目录内的汇总脚本继续保留。
+`run/eval_all_metrics.sh` 用于当前 LoRA 检查点的评估，新训练生成的 `final/` 可直接作为适配器目录。设置 `MODEL_BASE`、`MODEL_LORA_BASE`、`MODEL_SUFFIX` 和图像路径环境变量后运行；旧 projector 专用启动器已移除。适配器缺失会明确报错，避免误将底模当作训练结果。`run/summarize_eval_results.py` 和评估目录内的汇总脚本继续保留。
 
-图片数据、COCO 标注、部分外部数据和实际权重需要另行准备。GPT 评分需要通过环境变量配置服务与凭据；评估脚本的历史默认路径、服务与参数应在使用前检查。生成成功和弱反馈统计不能替代 benchmark 指标，也不能证明一般能力保持。
+路径变量包括 `IMAGE_FOLDER_LB`、`IMAGE_FOLDER_POPE`、`IMAGE_DIR_AMBER` 和 `MMHAL_DATA_ROOT`。
+`RUN_GPT=0` 只生成回答并计算 POPE/AMBER 本地指标；默认 `RUN_GPT=1` 还需要
+`OPENAI_API_KEY` 及 `ANNOTATION_FILE`，会调用外部评分服务。评估器保留 `--use-qlora`/
+`--qlora-path` 参数名以兼容原接口，当前加载的是普通 BF16 LoRA。
+
+图片数据、COCO 标注、部分外部数据和实际权重需要另行准备。GPT 评分通过环境变量配置服务与凭据；运行前检查路径与参数。原始图片和本地权重作为运行资源保留，不是当前分支追踪的实验代码。生成成功和弱反馈统计不能替代 benchmark 指标，也不能证明一般能力保持。
 
 ## 来源与许可
 

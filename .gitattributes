@@ -1,2 +1,5 @@
 # Keep training and evaluation launchers usable by bash on Windows checkouts.
 run/*.sh text eol=lf
+
+# Unified diff context lines intentionally contain a leading space, even if blank.
+llava_setup/llava_modifications.patch -whitespace
