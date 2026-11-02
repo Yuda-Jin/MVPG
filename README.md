@@ -57,6 +57,9 @@ cp -R llava_setup/LLaVA/llava ./llava
 
 ## 幻觉及能力评估
 
+断点续训、默认每500次成功更新保存检查点、逐步指标/TensorBoard与自动实验对照表，见
+[续训与实验对照说明](docs/training_resume_and_comparison.md)。
+
 以下代码、脚本及其仓库内问题/标注文件均保留：
 
 - MMHal-Bench：生成、模型评分及结果汇总。

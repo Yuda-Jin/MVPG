@@ -249,6 +249,24 @@ class LlavaBackend:
         self.model.save_pretrained(str(path), safe_serialization=False)
         self.tokenizer.save_pretrained(str(path))
 
+    def load_checkpoint(self, path):
+        """Restore the existing language adapter without rebuilding the base."""
+        import torch
+        from peft import get_peft_model_state_dict, set_peft_model_state_dict
+        path = Path(path)
+        if (path / "adapter_model.bin").is_file():
+            state = torch.load(path / "adapter_model.bin", map_location="cpu", weights_only=True)
+        else:
+            from safetensors.torch import load_file
+            state = load_file(str(path / "adapter_model.safetensors"), device="cpu")
+        expected = get_peft_model_state_dict(self.model)
+        if set(state) != set(expected) or any(state[k].shape != expected[k].shape for k in state):
+            raise ValueError("Checkpoint adapter keys/shapes differ from the loaded language adapter")
+        set_peft_model_state_dict(self.model, state)
+        restored = get_peft_model_state_dict(self.model)
+        if any(not torch.equal(restored[k].detach().cpu(), state[k].to(restored[k].dtype)) for k in state):
+            raise ValueError("Checkpoint adapter did not restore exactly")
+
 
 class CharacterTokenizer:
     """ASCII-only fixture tokenizer for a dependency-light synthetic smoke test."""
@@ -280,3 +298,8 @@ class TinyBackend:
         path = Path(path)
         path.mkdir(parents=True, exist_ok=False)
         torch.save(self.model.state_dict(), path / "synthetic_model.pt")
+
+    def load_checkpoint(self, path):
+        import torch
+        state = torch.load(Path(path) / "synthetic_model.pt", map_location="cpu", weights_only=True)
+        self.model.load_state_dict(state, strict=True)

@@ -1,0 +1,929 @@
+{
+  "schema_version": 1,
+  "paper": {
+    "title": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+    "source_pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+    "source_pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+    "verified_table": 2,
+    "pdf_page": 7,
+    "printed_page": 10616,
+    "status": "verified_from_user_provided_pdf",
+    "notes": [
+      "Paper numbers are references, not reproduced results.",
+      "Training feedback teachers are separate from benchmark judges.",
+      "Actual optimizer update counts are not explicitly reported; steps remain null."
+    ]
+  },
+  "rows": [
+    {
+      "run_id": "paper:table2:qwen-vl-chat-34b:base",
+      "source_type": "paper_reported",
+      "method": "base",
+      "model": "Qwen-VL-Chat-34B",
+      "steps": null,
+      "judge": "引用原论文；本表未说明具体裁判",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 6.6,
+        "amber_cover": 53.2,
+        "amber_hal": 31.0,
+        "amber_cog": 2.9,
+        "mmhal_avg_score": 2.89,
+        "mmhal_hallucination_rate": 0.43,
+        "object_hal_chairs": 36.0,
+        "object_hal_chairi": 21.3,
+        "pope_adv_accuracy": null,
+        "pope_adv_precision": null
+      },
+      "protocol": {
+        "training_samples_reported": null,
+        "training_feedback_reported": null,
+        "provenance_marker": "†",
+        "provenance_note": "引用论文[19]的数字，未在本文重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "not specified for borrowed results in attached paper",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:qwen-vl-chat-34b:silkie",
+      "source_type": "paper_reported",
+      "method": "Silkie",
+      "model": "Qwen-VL-Chat-34B",
+      "steps": null,
+      "judge": "引用原论文；本表未说明具体裁判",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 5.4,
+        "amber_cover": 55.8,
+        "amber_hal": 29.0,
+        "amber_cog": 2.0,
+        "mmhal_avg_score": 3.01,
+        "mmhal_hallucination_rate": 0.41,
+        "object_hal_chairs": 25.3,
+        "object_hal_chairi": 13.9,
+        "pope_adv_accuracy": null,
+        "pope_adv_precision": null
+      },
+      "protocol": {
+        "training_samples_reported": 80000,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "†",
+        "provenance_note": "引用论文[19]的数字，未在本文重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "not specified for borrowed results in attached paper",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:base",
+      "source_type": "paper_reported",
+      "method": "base",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 7.7,
+        "amber_cover": 51.6,
+        "amber_hal": 34.7,
+        "amber_cog": 4.2,
+        "mmhal_avg_score": 2.01,
+        "mmhal_hallucination_rate": 0.61,
+        "object_hal_chairs": 55.67,
+        "object_hal_chairi": 15.96,
+        "pope_adv_accuracy": 0.8493,
+        "pope_adv_precision": 0.8909999999999999
+      },
+      "protocol": {
+        "training_samples_reported": null,
+        "training_feedback_reported": null,
+        "provenance_marker": "§",
+        "provenance_note": "作者使用可用检查点重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:llava-rlhf",
+      "source_type": "paper_reported",
+      "method": "LLaVA-RLHF",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 9.7,
+        "amber_cover": 53.2,
+        "amber_hal": 46.6,
+        "amber_cog": 5.3,
+        "mmhal_avg_score": 1.88,
+        "mmhal_hallucination_rate": 0.71,
+        "object_hal_chairs": 58.0,
+        "object_hal_chairi": 15.61,
+        "pope_adv_accuracy": 0.8,
+        "pope_adv_precision": 0.8719
+      },
+      "protocol": {
+        "training_samples_reported": 122000,
+        "training_feedback_reported": "Self-Reward",
+        "provenance_marker": "§",
+        "provenance_note": "作者使用可用检查点重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:halva",
+      "source_type": "paper_reported",
+      "method": "HALVA",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "引用原论文；本表未说明具体裁判",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 6.6,
+        "amber_cover": 53.0,
+        "amber_hal": 32.2,
+        "amber_cog": 3.4,
+        "mmhal_avg_score": 2.25,
+        "mmhal_hallucination_rate": 0.54,
+        "object_hal_chairs": 41.4,
+        "object_hal_chairi": 11.7,
+        "pope_adv_accuracy": null,
+        "pope_adv_precision": null
+      },
+      "protocol": {
+        "training_samples_reported": 21500,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "‡",
+        "provenance_note": "引用论文[17]的数字，未在本文重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "not specified for borrowed results in attached paper",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:mdpo",
+      "source_type": "paper_reported",
+      "method": "mDPO",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "引用原论文；本表未说明具体裁判",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 4.4,
+        "amber_cover": 52.4,
+        "amber_hal": 24.5,
+        "amber_cog": 2.4,
+        "mmhal_avg_score": 2.39,
+        "mmhal_hallucination_rate": 0.54,
+        "object_hal_chairs": 35.7,
+        "object_hal_chairi": 9.8,
+        "pope_adv_accuracy": null,
+        "pope_adv_precision": 0.9536
+      },
+      "protocol": {
+        "training_samples_reported": 10000,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "⋆",
+        "provenance_note": "引用论文[27]的数字，未在本文重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "not specified for borrowed results in attached paper",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:ha-dpo",
+      "source_type": "paper_reported",
+      "method": "HA-DPO",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 7.8,
+        "amber_cover": 52.1,
+        "amber_hal": 35.6,
+        "amber_cog": 4.2,
+        "mmhal_avg_score": 1.89,
+        "mmhal_hallucination_rate": 0.65,
+        "object_hal_chairs": 54.0,
+        "object_hal_chairi": 14.45,
+        "pope_adv_accuracy": 0.8490000000000001,
+        "pope_adv_precision": 0.9042
+      },
+      "protocol": {
+        "training_samples_reported": 6000,
+        "training_feedback_reported": "GPT4",
+        "provenance_marker": "§",
+        "provenance_note": "作者使用可用检查点重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:povid",
+      "source_type": "paper_reported",
+      "method": "POVID",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 7.4,
+        "amber_cover": 51.3,
+        "amber_hal": 34.3,
+        "amber_cog": 3.9,
+        "mmhal_avg_score": 2.08,
+        "mmhal_hallucination_rate": 0.6,
+        "object_hal_chairs": 50.67,
+        "object_hal_chairi": 15.28,
+        "pope_adv_accuracy": 0.8477,
+        "pope_adv_precision": 0.8901
+      },
+      "protocol": {
+        "training_samples_reported": 17000,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "§",
+        "provenance_note": "作者使用可用检查点重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:rlaif-v",
+      "source_type": "paper_reported",
+      "method": "RLAIF-V",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 3.0,
+        "amber_cover": 50.4,
+        "amber_hal": 16.2,
+        "amber_cog": 1.0,
+        "mmhal_avg_score": 3.0,
+        "mmhal_hallucination_rate": 0.38,
+        "object_hal_chairs": 16.0,
+        "object_hal_chairi": 3.7,
+        "pope_adv_accuracy": 0.8157,
+        "pope_adv_precision": 0.9497
+      },
+      "protocol": {
+        "training_samples_reported": 16000,
+        "training_feedback_reported": "LLaVA-Next",
+        "provenance_marker": "§",
+        "provenance_note": "作者使用可用检查点重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:opa",
+      "source_type": "paper_reported",
+      "method": "OPA",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 5.6,
+        "amber_cover": 52.8,
+        "amber_hal": 23.2,
+        "amber_cog": 2.3,
+        "mmhal_avg_score": 2.41,
+        "mmhal_hallucination_rate": 0.52,
+        "object_hal_chairs": 28.0,
+        "object_hal_chairi": 9.48,
+        "pope_adv_accuracy": 0.8253,
+        "pope_adv_precision": 0.9536
+      },
+      "protocol": {
+        "training_samples_reported": 4800,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "own",
+        "provenance_note": "本文 OPA / OPA-DPO 实验",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision.",
+        "training_data": "4,800 filtered image-question samples from RLAIF-V",
+        "training_recipe_reported": {
+          "OPA": {
+            "epochs": 2,
+            "global_batch_size": 128,
+            "learning_rate": 2e-05,
+            "lr_schedule": "cosine",
+            "lora_rank": 256,
+            "lora_alpha": 512
+          }
+        }
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-7b:opa-dpo",
+      "source_type": "paper_reported",
+      "method": "OPA-DPO",
+      "model": "LLaVA-Instruct-1.5-7B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 2.2,
+        "amber_cover": 47.9,
+        "amber_hal": 11.6,
+        "amber_cog": 0.9,
+        "mmhal_avg_score": 2.83,
+        "mmhal_hallucination_rate": 0.45,
+        "object_hal_chairs": 13.0,
+        "object_hal_chairi": 4.25,
+        "pope_adv_accuracy": 0.826,
+        "pope_adv_precision": 0.9561
+      },
+      "protocol": {
+        "training_samples_reported": 4800,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "own",
+        "provenance_note": "本文 OPA / OPA-DPO 实验",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision.",
+        "training_data": "4,800 filtered image-question samples from RLAIF-V",
+        "training_recipe_reported": {
+          "OPA": {
+            "epochs": 2,
+            "global_batch_size": 128,
+            "learning_rate": 2e-05,
+            "lr_schedule": "cosine",
+            "lora_rank": 256,
+            "lora_alpha": 512
+          },
+          "DPO": {
+            "epochs": 4,
+            "global_batch_size": 32,
+            "learning_rate": 1e-06,
+            "beta": 0.1,
+            "gamma_IF": 0.2,
+            "gamma_Anc": 1,
+            "delta": 0,
+            "image_mask_ratio": 0.3
+          }
+        }
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-13b:base",
+      "source_type": "paper_reported",
+      "method": "base",
+      "model": "LLaVA-Instruct-1.5-13B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 6.8,
+        "amber_cover": 51.9,
+        "amber_hal": 31.8,
+        "amber_cog": 3.3,
+        "mmhal_avg_score": 2.48,
+        "mmhal_hallucination_rate": 0.52,
+        "object_hal_chairs": 51.0,
+        "object_hal_chairi": 13.71,
+        "pope_adv_accuracy": 0.855,
+        "pope_adv_precision": 0.9031
+      },
+      "protocol": {
+        "training_samples_reported": null,
+        "training_feedback_reported": null,
+        "provenance_marker": "§",
+        "provenance_note": "作者使用可用检查点重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-13b:llava-rlhf",
+      "source_type": "paper_reported",
+      "method": "LLaVA-RLHF",
+      "model": "LLaVA-Instruct-1.5-13B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 7.7,
+        "amber_cover": 52.3,
+        "amber_hal": 38.6,
+        "amber_cog": 4.0,
+        "mmhal_avg_score": 2.27,
+        "mmhal_hallucination_rate": 0.64,
+        "object_hal_chairs": 44.67,
+        "object_hal_chairi": 11.83,
+        "pope_adv_accuracy": 0.8247,
+        "pope_adv_precision": 0.9025
+      },
+      "protocol": {
+        "training_samples_reported": 122000,
+        "training_feedback_reported": "Self-Reward",
+        "provenance_marker": "§",
+        "provenance_note": "作者使用可用检查点重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-13b:rlhf-v-hd",
+      "source_type": "paper_reported",
+      "method": "RLHF-V (HD)",
+      "model": "LLaVA-Instruct-1.5-13B",
+      "steps": null,
+      "judge": "引用原论文；本表未说明具体裁判",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 6.3,
+        "amber_cover": 46.1,
+        "amber_hal": 25.1,
+        "amber_cog": 2.1,
+        "mmhal_avg_score": 2.81,
+        "mmhal_hallucination_rate": 0.49,
+        "object_hal_chairs": null,
+        "object_hal_chairi": null,
+        "pope_adv_accuracy": null,
+        "pope_adv_precision": null
+      },
+      "protocol": {
+        "training_samples_reported": 1400,
+        "training_feedback_reported": "Human",
+        "provenance_marker": "†",
+        "provenance_note": "引用论文[19]的数字，未在本文重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "not specified for borrowed results in attached paper",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-13b:hsa-dpo",
+      "source_type": "paper_reported",
+      "method": "HSA-DPO",
+      "model": "LLaVA-Instruct-1.5-13B",
+      "steps": null,
+      "judge": "引用原论文；本表未说明具体裁判",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 2.1,
+        "amber_cover": 47.3,
+        "amber_hal": 13.4,
+        "amber_cog": 1.2,
+        "mmhal_avg_score": 2.61,
+        "mmhal_hallucination_rate": 0.48,
+        "object_hal_chairs": null,
+        "object_hal_chairi": null,
+        "pope_adv_accuracy": 0.84,
+        "pope_adv_precision": 0.802
+      },
+      "protocol": {
+        "training_samples_reported": 8000,
+        "training_feedback_reported": "GPT-4/4V",
+        "provenance_marker": "†",
+        "provenance_note": "引用论文[19]的数字，未在本文重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "not specified for borrowed results in attached paper",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-13b:halva",
+      "source_type": "paper_reported",
+      "method": "HALVA",
+      "model": "LLaVA-Instruct-1.5-13B",
+      "steps": null,
+      "judge": "引用原论文；本表未说明具体裁判",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 6.4,
+        "amber_cover": 52.6,
+        "amber_hal": 30.4,
+        "amber_cog": 3.2,
+        "mmhal_avg_score": 2.58,
+        "mmhal_hallucination_rate": 0.45,
+        "object_hal_chairs": 45.4,
+        "object_hal_chairi": 12.8,
+        "pope_adv_accuracy": null,
+        "pope_adv_precision": null
+      },
+      "protocol": {
+        "training_samples_reported": 21500,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "‡",
+        "provenance_note": "引用论文[17]的数字，未在本文重新评估",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "not specified for borrowed results in attached paper",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision."
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-13b:opa",
+      "source_type": "paper_reported",
+      "method": "OPA",
+      "model": "LLaVA-Instruct-1.5-13B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 5.2,
+        "amber_cover": 54.1,
+        "amber_hal": 21.4,
+        "amber_cog": 2.2,
+        "mmhal_avg_score": 2.75,
+        "mmhal_hallucination_rate": 0.45,
+        "object_hal_chairs": 31.33,
+        "object_hal_chairi": 8.88,
+        "pope_adv_accuracy": 0.836,
+        "pope_adv_precision": 0.9623999999999999
+      },
+      "protocol": {
+        "training_samples_reported": 4800,
+        "training_feedback_reported": "GPT-4V",
+        "provenance_marker": "own",
+        "provenance_note": "本文 OPA / OPA-DPO 实验",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision.",
+        "training_data": "4,800 filtered image-question samples from RLAIF-V",
+        "training_recipe_reported": {
+          "OPA": {
+            "epochs": 2,
+            "global_batch_size": 128,
+            "learning_rate": 2e-05,
+            "lr_schedule": "cosine",
+            "lora_rank": 256,
+            "lora_alpha": 512
+          }
+        }
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    },
+    {
+      "run_id": "paper:table2:llava-instruct-1-5-13b:opa-dpo",
+      "source_type": "paper_reported",
+      "method": "OPA-DPO",
+      "model": "LLaVA-Instruct-1.5-13B",
+      "steps": null,
+      "judge": "MMHal: GPT-4（未给快照）；ObjectHal: 未说明",
+      "status": "paper_reported_not_reproduced",
+      "metrics": {
+        "amber_chair": 2.4,
+        "amber_cover": 48.3,
+        "amber_hal": 12.8,
+        "amber_cog": 0.9,
+        "mmhal_avg_score": 3.07,
+        "mmhal_hallucination_rate": 0.39,
+        "object_hal_chairs": 16.33,
+        "object_hal_chairi": 5.48,
+        "pope_adv_accuracy": 0.8262999999999999,
+        "pope_adv_precision": 0.9631000000000001
+      },
+      "protocol": {
+        "training_samples_reported": 4800,
+        "training_feedback_reported": "GPT4V",
+        "provenance_marker": "own",
+        "provenance_note": "本文 OPA / OPA-DPO 实验",
+        "evaluation_sizes": {
+          "amber_generative": 1004,
+          "mmhal": 96,
+          "object_hal": 300,
+          "pope_adversarial": 3000
+        },
+        "decoding": "greedy, per Table 2 caption",
+        "object_hal_scoring": "code from Yu et al. [15]; LLM extraction/judge model not specified",
+        "mmhal_judge": "GPT-4; snapshot not specified",
+        "directly_comparable_to_local_run": false,
+        "missing_metric_note": "Paper does not report qa90, AMBER discriminative, POPE random/popular, or POPE F1/recall; do not derive F1 from accuracy and precision.",
+        "training_data": "4,800 filtered image-question samples from RLAIF-V",
+        "training_recipe_reported": {
+          "OPA": {
+            "epochs": 2,
+            "global_batch_size": 128,
+            "learning_rate": 2e-05,
+            "lr_schedule": "cosine",
+            "lora_rank": 256,
+            "lora_alpha": 512
+          },
+          "DPO": {
+            "epochs": 4,
+            "global_batch_size": 32,
+            "learning_rate": 1e-06,
+            "beta": 0.1,
+            "gamma_IF": 0.2,
+            "gamma_Anc": 1,
+            "delta": 0,
+            "image_mask_ratio": 0.3
+          }
+        }
+      },
+      "source": {
+        "paper": "Mitigating Hallucinations in Large Vision-Language Models via DPO: On-Policy Data Hold the Key",
+        "pdf": "C:\\Users\\yuda_\\Zotero\\storage\\3W3HAG2S\\Yang 等 - Mitigating Hallucinations in Large Vision-Language Models via DPO On-Policy Data Hold the Key.pdf",
+        "pdf_sha256": "6c91777f84542b1b77e243fa0fa8a54391b533aaac5a2cc311eb167772e5a532",
+        "pdf_page": 7,
+        "printed_page": 10616,
+        "table": 2,
+        "verification": "Transcribed from complete rendered Table 2; independently checked against page-07.png"
+      }
+    }
+  ]
+}

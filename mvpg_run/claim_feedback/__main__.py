@@ -66,22 +66,28 @@ def build_parser():
     model_args(train)
     train.add_argument("--input", required=True)
     train.add_argument("--output-dir", required=True, help="Must not already exist")
-    train.add_argument("--mode", choices=("modulated", "fixed", "positive", "negative", "project_only"), default="modulated")
-    train.add_argument("--lr", type=float, default=1e-3)
-    train.add_argument("--alpha", type=float, default=1.0)
-    train.add_argument("--beta", type=float, default=1.0)
-    train.add_argument("--max-update-norm", type=float, default=1e-3,
+    train.add_argument("--resume-from", help="Resume a sealed checkpoint into a NEW output directory; budgets are cumulative")
+    train.add_argument("--allow-legacy-resume", action="store_true",
+                       help="Explicitly allow an old final adapter with inferred cursor and no saved RNG")
+    train.add_argument("--mode", choices=("modulated", "fixed", "positive", "negative", "project_only"))
+    train.add_argument("--lr", type=float)
+    train.add_argument("--alpha", type=float)
+    train.add_argument("--beta", type=float)
+    train.add_argument("--max-update-norm", type=float,
                        help="L2 cap on actual parameter delta, not raw gradient norm")
-    train.add_argument("--epochs", type=int, default=1)
+    train.add_argument("--epochs", type=int, help="Total epochs from the beginning, including epochs before resume")
     train.add_argument("--max-steps", type=int, help="Cap attempted responses, including skipped feedback")
     train.add_argument("--max-updates", type=int,
                        help="Stop after this many successful parameter updates; fail if the data/attempt budget ends first")
-    train.add_argument("--checkpoint-every", type=int, default=0)
-    train.add_argument("--seed", type=int, default=42)
-    train.add_argument("--lora-rank", type=int, default=16)
-    train.add_argument("--lora-alpha", type=int, default=32)
-    train.add_argument("--allow-whole-claim-negative", action="store_true")
-    train.add_argument("--audit-loss-change", action="store_true",
+    train.add_argument("--checkpoint-every", type=int, help="Save each N successful global updates (default: 500)")
+    train.add_argument("--seed", type=int)
+    train.add_argument("--lora-rank", type=int)
+    train.add_argument("--lora-alpha", type=int)
+    train.set_defaults(precision=None)
+    train.add_argument("--log-every", type=int, help="Print progress each N attempted responses (default: 10)")
+    train.add_argument("--tensorboard", action=argparse.BooleanOptionalAction, default=None)
+    train.add_argument("--allow-whole-claim-negative", action=argparse.BooleanOptionalAction, default=None)
+    train.add_argument("--audit-loss-change", action=argparse.BooleanOptionalAction, default=None,
                        help="Extra forward to log selected positive/negative NLL after each step")
 
     smoke = commands.add_parser("smoke", help="Synthetic CPU mechanics only; no vision model or performance claim")
@@ -94,7 +100,7 @@ def build_parser():
 def _llava(args, train=False):
     from .backends import LlavaBackend
     kwargs = dict(device=args.device, precision=args.precision,
-                  train=train, adapter_path=args.adapter_path)
+                  train=train, adapter_path=getattr(args, "resume_from", None) or args.adapter_path)
     if train:
         kwargs.update(lora_rank=args.lora_rank, lora_alpha=args.lora_alpha)
     return LlavaBackend(args.model_name, **kwargs)
@@ -205,18 +211,59 @@ def run(args):
         return report
 
     if args.command == "train":
-        from .training import seed_everything, train_pool, validate_training_options
+        from .training import (TRAINING_DEFAULTS, seed_everything, train_pool,
+                               validate_training_options)
         if Path(args.output_dir).exists():
             raise FileExistsError("Training output directory already exists; choose a new run directory")
+        if args.resume_from and args.adapter_path:
+            raise ValueError("--resume-from and --adapter-path are mutually exclusive")
+        saved = {}
+        if args.resume_from:
+            from .checkpointing import read_checkpoint_settings
+            saved = read_checkpoint_settings(args.resume_from, allow_legacy=args.allow_legacy_resume)
+        for key, default in TRAINING_DEFAULTS.items():
+            if getattr(args, key) is None:
+                # Runtime output/cadence options use current defaults, not a
+                # legacy run's old attempted-step checkpoint interval.
+                inherited = {} if key in ("checkpoint_every", "log_every", "tensorboard") else saved
+                setattr(args, key, inherited.get(key, default))
+        adapter_cfg = {}
+        if args.resume_from:
+            adapter_file = Path(args.resume_from) / "adapter_config.json"
+            if adapter_file.is_file():
+                adapter_cfg = json.loads(adapter_file.read_text(encoding="utf-8"))
+            if args.precision is None:
+                metadata_file = Path(args.resume_from) / "trainer_state.json"
+                if metadata_file.is_file():
+                    metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+                    args.precision = metadata.get("signature", {}).get("precision")
+                else:
+                    metadata = json.loads((Path(args.resume_from).parent / "manifest.json").read_text(encoding="utf-8"))
+                    args.precision = metadata.get("backend", {}).get("precision")
+        args.precision = args.precision or "bf16"
+        for name, key, default in (("lora_rank", "r", 16), ("lora_alpha", "lora_alpha", 32)):
+            value = getattr(args, name)
+            if value is None:
+                setattr(args, name, adapter_cfg.get(key, default))
+            elif key in adapter_cfg and value != adapter_cfg[key]:
+                raise ValueError(f"Resume {name} differs from the checkpoint")
         validate_training_options(mode=args.mode, lr=args.lr, alpha=args.alpha,
             beta=args.beta, max_update_norm=args.max_update_norm, epochs=args.epochs,
             max_steps=args.max_steps, checkpoint_every=args.checkpoint_every,
-            max_updates=args.max_updates)
+            max_updates=args.max_updates, log_every=args.log_every)
         if args.lora_rank <= 0 or args.lora_alpha <= 0:
             raise ValueError("LoRA rank and alpha must be positive")
         # Fail invalid data before loading the full model.
-        if not list(read_jsonl(args.input)):
+        pool_records = list(read_jsonl(args.input))
+        if not pool_records:
             raise ValueError("Feedback pool is empty")
+        if args.resume_from:
+            from .checkpointing import load_resume
+            settings = {key: getattr(args, key) for key in TRAINING_DEFAULTS}
+            settings["image_root"] = str(Path(args.image_root).resolve())
+            load_resume(args.resume_from, input_path=args.input, records=pool_records,
+                        settings=settings, signature=None,
+                        allow_legacy=args.allow_legacy_resume)
         seed_everything(args.seed)
         backend = _llava(args, train=True)
         config = vars(args).copy()
@@ -229,7 +276,9 @@ def run(args):
             checkpoint_every=args.checkpoint_every,
             seed=args.seed, image_root=args.image_root,
             allow_whole_claim_negative=args.allow_whole_claim_negative,
-            audit_loss_change=args.audit_loss_change, config=config)
+            audit_loss_change=args.audit_loss_change, config=config,
+            resume_from=args.resume_from, allow_legacy_resume=args.allow_legacy_resume,
+            log_every=args.log_every, tensorboard=args.tensorboard)
 
     if args.command == "smoke":
         return smoke(args)

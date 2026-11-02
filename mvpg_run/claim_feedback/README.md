@@ -81,9 +81,12 @@ DiscoSG 使用[官方仓库](https://github.com/ShaoqLin/DiscoSG)，适配参考
 `steps.jsonl` 保存各回答的 token 所有权、损失、冲突、回退、实际步长与跳过原因。
 `--audit-loss-change` 增加一次前向，记录更新后选中位置的正负 NLL，有额外成本。
 `final/` 和可选中间检查点保存标准 LoRA adapter；可用 `generate --adapter-path .../final` 自由生成，
-或接入仓库已有 LLaVA 评估器。`--checkpoint-every` 按尝试回答数计，`--max-steps` 包含跳过的回答。
+或接入仓库已有 LLaVA 评估器。`--checkpoint-every` 默认500，按实际成功更新计；`--max-steps` 包含跳过的回答。
 `--max-updates 100` 则要求实际成功更新 100 次；若数据或尝试预算耗尽，会保存部分 adapter、标记 `incomplete` 并返回错误。
-`--adapter-path` 是从已有 adapter 开始一轮新训练，不恢复旧运行的游标。
+`--resume-from` 恢复封存的参数、游标、计数与随机状态，并写入新目录；预算是累计总预算。
+`--adapter-path` 则从已有 adapter 开始新实验，不恢复旧运行游标。
+每步指标、可选TensorBoard、旧100步结果的显式兼容续训与自动对照表见
+[使用说明](../../docs/training_resume_and_comparison.md)。
 
 比较五种 `--mode` 时复用同一个反馈文件、基座、LoRA 配置和 seed，并使用不同输出目录。
 `--max-update-norm` 仅提供相同上限，不保证所有模式实际步长相等；严格范数匹配仍需检查日志并匹配实验预算。

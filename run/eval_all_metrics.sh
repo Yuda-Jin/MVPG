@@ -227,3 +227,32 @@ fi
 
 "$PYTHON_BIN" "$SUMMARY_TOOL" --logs-dir "$LOG_DIR" --status "$STATUS_FILE" \
     --out-root "$EVAL_ROOT" --model-suffix "$MODEL_SUFFIX"
+summary_code=$?
+
+# Keep a sourced comparison registry across runs/checkpoints. A checkpoint's
+# state takes precedence over its parent run, which may have trained further.
+comparison_args=(--summary "$EVAL_ROOT/summary_$MODEL_SUFFIX.json" --run-id "$MODEL_SUFFIX"
+    --method "${EXPERIMENT_METHOD:-claim_feedback}"
+    --model "$(basename "$MODEL_BASE")" --judge "$GPT_MODEL"
+    --evaluation-manifest "$LOG_DIR/manifest.json"
+    --output-dir "${COMPARISON_DIR:-./output/experiment_comparison}")
+training_manifest="${TRAINING_MANIFEST:-}"
+if [[ -z "$training_manifest" && -f "$MODEL_LORA_BASE/trainer_state.json" ]]; then
+    training_manifest="$MODEL_LORA_BASE/trainer_state.json"
+elif [[ -z "$training_manifest" && -f "$(dirname "$MODEL_LORA_BASE")/manifest.json" ]]; then
+    training_manifest="$(dirname "$MODEL_LORA_BASE")/manifest.json"
+fi
+if [[ -n "$training_manifest" ]]; then comparison_args+=(--training-manifest "$training_manifest"); fi
+if [[ -n "${TRAINING_STEPS:-}" ]]; then comparison_args+=(--steps "$TRAINING_STEPS"); fi
+if [[ -n "${TRAINING_DATA_DESCRIPTION:-}" ]]; then comparison_args+=(--training-data "$TRAINING_DATA_DESCRIPTION"); fi
+if [[ -n "${FEEDBACK_SOURCE:-}" ]]; then comparison_args+=(--feedback-source "$FEEDBACK_SOURCE"); fi
+comparison_code=0
+if [[ -f "$EVAL_ROOT/summary_$MODEL_SUFFIX.json" ]]; then
+    "$PYTHON_BIN" ./run/compare_experiments.py "${comparison_args[@]}" || comparison_code=$?
+else
+    comparison_code=1
+fi
+# Preserve a benchmark failure; a failed registry update is also visible when
+# benchmark scoring itself succeeded.
+if [[ "$summary_code" != 0 ]]; then exit "$summary_code"; fi
+exit "$comparison_code"
