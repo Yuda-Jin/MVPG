@@ -54,6 +54,25 @@ def test_reused_scores_detect_changed_model_weights(tmp_path):
         validate_scores(tmp_path, model)
 
 
+def test_controlled_interruption_reaps_owned_children(tmp_path):
+    details = tmp_path / "details"
+    details.mkdir()
+    (details / "plan.json").write_text("{}")
+    (details / "inputs.jsonl").write_text("")
+    runner = Runner(tmp_path, {})
+    process, log = runner.command("judge", ["-c", "import time; time.sleep(60)"])
+    try:
+        runner.stop_owned_jobs()
+        assert process.poll() is not None
+        assert log.closed
+        assert runner.state["stages"]["judge"]["status"] == "interrupted"
+        assert not runner.active
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+
+
 @pytest.mark.parametrize("changed", [{"split": "test"}, {"analysis_role": "retrospective"}])
 def test_content_duplicates_cannot_cross_frozen_boundaries(changed):
     meta = {"image_group": "sha256:identical", "split": "dev", "analysis_role": "formal"}

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import time
@@ -160,6 +161,7 @@ class Runner:
         self.root, self.details, self.plan = root, root / "details", plan
         self.logs = self.details / "logs"
         self.logs.mkdir(exist_ok=True)
+        self.active = {}
         manifest = {"schema": "grounding_calibration_orchestration_v1", "plan_sha256": sha(self.details / "plan.json"),
                     "input_sha256": sha(self.details / "inputs.jsonl")}
         immutable_bytes(self.details / "run_manifest.json", (json.dumps(manifest, indent=2) + "\n").encode())
@@ -178,13 +180,28 @@ class Runner:
             self.final_published |= read_json(published).get("schema") == "grounding_calibration_results_v1"
         if not self.final_published and self.state["stage"] != "analysis":
             summary = {k: self.state[k] for k in ("status", "stage", "updated_utc")}
+            progress = {}
+            for name, path in (("generation", self.details / "generation/status.json"),
+                               ("decomposition", self.details / "decomposition/status.json"),
+                               ("judge", self.details / "judged.jsonl.status.json")):
+                if path.exists():
+                    progress[name] = read_json(path)
             summary.update(scope="Full original-image corpus; visual judge is a silver reference, not human GT",
-                           details="details/", stages=self.state["stages"])
+                           details="details/", stages=self.state["stages"], progress=progress, thresholds=None)
             write_json(self.root / "results.json", summary)
+            lines = []
+            for name, label in (("generation", "图片描述"), ("decomposition", "声明分解")):
+                if name in progress:
+                    item = progress[name]
+                    lines.append(f"{label}：{item['completed_records']}/{item['total']}。")
+            if "judge" in progress:
+                item = progress["judge"]
+                lines.append(f"视觉判别：{item['cases_judged']}/{item['cases_total']}条声明。")
             atomic_bytes(self.root / "results.md", ("# 全量视觉接地性校准\n\n"
                 f"状态：{self.state['status']}；当前阶段：{self.state['stage']}。\n\n"
+                + "\n\n".join(lines) + "\n\n"
                 "图片描述、原始图结构、声明、裁判记录与FG-CLIP分数均保存在details/。"
-                "最终阈值仅用独立开发图像选择，测试图像用于验证。\n").encode())
+                "不使用旧阈值预筛选。最终阈值仅用独立开发图像选择，测试图像用于验证。\n").encode())
 
     def command(self, name, args):
         self.state["stage"] = name
@@ -196,6 +213,7 @@ class Runner:
         process = subprocess.Popen([sys.executable, "-u", *map(str, args)], cwd=REPO, env=env,
                                    stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
         stage.update(status="running", pid=process.pid, started_utc=now(), log=str(self.logs / (name + ".log")))
+        self.active[name] = (process, log)
         self.save()
         return process, log
 
@@ -211,12 +229,27 @@ class Runner:
                                                      exit_code=code, finished_utc=now())
                     if code:
                         failed.append(name)
+                    self.active.pop(name, None)
                     del pending[name]
             self.save()
             if pending:
                 time.sleep(10)
         if failed:
             raise RuntimeError("Stages failed: " + ", ".join(failed) + "; outputs are retained for resume")
+
+    def stop_owned_jobs(self):
+        for process, _ in self.active.values():
+            if process.poll() is None:
+                process.terminate()
+        for name, (process, log) in self.active.items():
+            try:
+                code = process.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                code = process.wait()
+            log.close()
+            self.state["stages"][name].update(status="interrupted", exit_code=code, finished_utc=now())
+        self.active.clear()
 
     def corpus_stage(self, name, args):
         path = self.details / name
@@ -283,6 +316,7 @@ def run(root):
             runner.save()
             return runner.state
         except BaseException as exc:
+            runner.stop_owned_jobs()
             runner.state.update(status="interrupted" if isinstance(exc, KeyboardInterrupt) else "failed",
                                 error=f"{type(exc).__name__}: {exc}")
             # If analysis published any final artifact, never replace it with
@@ -297,6 +331,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", type=Path, required=True)
     args = parser.parse_args(argv)
+    def interrupted(signum, frame):
+        raise KeyboardInterrupt("Pipeline termination requested")
+    signal.signal(signal.SIGTERM, interrupted)
     try:
         result = run(args.run.expanduser().resolve())
     except (OSError, ValueError, RuntimeError, KeyError) as exc:
