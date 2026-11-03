@@ -98,13 +98,17 @@ def prepare(root, plan):
     return audit
 
 
-def validate_scores(details):
+def validate_scores(details, fgclip_root):
     from mvpg_run.claim_feedback.diagnostics import load_cases
     source = load_cases(details / "cases.jsonl")
     scored = load_cases(details / "scored.jsonl")
     if len(source) != len(scored):
         raise ValueError("Existing score file is incomplete")
     fingerprint = sha(details / "cases.jsonl")
+    model_root = Path(fgclip_root).resolve()
+    expected_model = {"root": str(model_root), "score_mode": "global", "text_form": "raw", "walk_type": "short",
+        "weights_sha256": sha(model_root / "model.safetensors"), "config_sha256": sha(model_root / "config.json"),
+        "tokenizer_sha256": sha(model_root / "tokenizer.model")}
     for original, row in zip(source, scored):
         if row["case_id"] != original["case_id"]:
             raise ValueError("Score file order or case identity differs")
@@ -112,6 +116,11 @@ def validate_scores(details):
             raise ValueError("Existing score file belongs to different cases")
         if "global_raw" not in row.get("scores", {}):
             raise ValueError("Existing score file is missing global_raw")
+        provenance = row.get("score_provenance", {}).get("global_raw", {})
+        if any(provenance.get(k) != v for k, v in expected_model.items()):
+            raise ValueError("Existing scores use different FG-CLIP weights or scoring configuration")
+        if any(row.get(k) != v for k, v in original.items() if k not in ("scores", "score_provenance")):
+            raise ValueError("Existing scores changed frozen case fields")
     return len(scored)
 
 
@@ -121,7 +130,7 @@ def join(root):
     cases = load_cases(details / "cases.jsonl")
     judged = load_cases(details / "judged.jsonl")
     scored = load_cases(details / "scored.jsonl")
-    validate_scores(details)
+    validate_scores(details, read_json(details / "plan.json")["fgclip_root"])
     by_judge, by_score = ({r["case_id"]: r for r in rows} for rows in (judged, scored))
     expected = {r["case_id"] for r in cases}
     if set(by_judge) != expected or set(by_score) != expected:
@@ -167,7 +176,7 @@ class Runner:
         published = self.root / "results.json"
         if published.exists():
             self.final_published |= read_json(published).get("schema") == "grounding_calibration_results_v1"
-        if not self.final_published:
+        if not self.final_published and self.state["stage"] != "analysis":
             summary = {k: self.state[k] for k in ("status", "stage", "updated_utc")}
             summary.update(scope="Full original-image corpus; visual judge is a silver reference, not human GT",
                            details="details/", stages=self.state["stages"])
@@ -248,14 +257,15 @@ def run(root):
                 "--image-root", plan.get("image_root", "."), "--image-detail", "original"]
             if Path(str(judged) + ".manifest.json").exists():
                 judge_args.append("--resume")
-            jobs = {"judge": runner.command("judge", judge_args)}
+            jobs = {}
             if (details / "scored.jsonl").exists():
-                runner.state["stages"]["score"] = {"status": "complete", "reused_cases": validate_scores(details)}
+                runner.state["stages"]["score"] = {"status": "complete", "reused_cases": validate_scores(details, plan["fgclip_root"])}
             else:
                 score_args = ["-m", "mvpg_run.claim_feedback.diagnostics", "score", "--input", details / "cases.jsonl",
                     "--output", details / "scored.jsonl", "--fgclip-root", plan["fgclip_root"], "--device", "cuda",
                     "--image-root", plan.get("image_root", "."), "--score-mode", "global", "--text-form", "raw"]
                 jobs["score"] = runner.command("score", score_args)
+            jobs["judge"] = runner.command("judge", judge_args)
             runner.state["stage"] = "judge_and_score"; runner.save(); runner.await_jobs(jobs)
             runner.state["stage"] = "join"; runner.save()
             runner.state["stages"]["join"] = {"status": "complete", **join(root)}
