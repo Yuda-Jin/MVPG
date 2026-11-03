@@ -60,6 +60,17 @@ python run/run_grounding_calibration.py --run /root/autodl-tmp/output/EXPERIMENT
 裁判按逐图日志恢复，仅重试未成功项目；FG-CLIP已有完整且来源匹配的分数时复用。
 输入、分组、图片、模型或提示改变应另开实验，不混合不同协议。
 
+外部裁判服务临时失败时，可为已运行的主流程启动有界恢复监督器：
+
+```bash
+python run/recover_grounding_judge.py --run /root/autodl-tmp/output/EXPERIMENT --wait-pid MAIN_PID
+```
+
+监督器等待原主流程退出，仅在计分等阶段已完成、裁判以未完成状态退出且没有致命错误时，
+最多追加三轮恢复。每轮仅重试失败图片，成功判别全部复用，模型、提示、输入、输出上限和
+ID校验保持一致。重试预算跨监督器重启保留；认证、图片变更、计分失败等情况不自动重跑。
+恢复状态和尝试历史保存在`details/judge_recovery.json`。
+
 结果目录只需查看：
 
 ```text
