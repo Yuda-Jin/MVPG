@@ -1,4 +1,4 @@
-"""Select FG-CLIP thresholds on formal dev images and evaluate frozen test images.
+"""Select grounding-score thresholds on dev images and evaluate frozen test images.
 
 The reference is an image-reading model's silver labels, not human ground truth.
 Only explicitly marked formal cases enter selection; retrospective cases remain
@@ -210,7 +210,10 @@ def _threshold(value):
 
 def render_summary(result, report):
     corpus, hp, f1 = report["corpus"], report["high_precision_analysis"], report["best_f1_negative"]
-    lines = ["# FG-CLIP声明接地性校准", "",
+    score_key = hp["score_key"]
+    method = "Grounding DINO" if score_key.startswith("dino_") else (
+        "FG-CLIP" if score_key.startswith(("global_", "patch_")) else score_key)
+    lines = [f"# {method}声明接地性校准", "",
         "参考标签来自实际看图的外部模型，属于裁判银标，不等同于人工真值。阈值只在formal开发图片选择，测试图片只用于冻结后的评价。", "",
         f"状态：{result['status']}；输入候选涉及{corpus['all']['n_images']}图、{corpus['all']['n_cases']}例；"
         f"formal {corpus['formal']['n_images']}图、{corpus['formal']['n_cases']}例；"
@@ -241,8 +244,8 @@ def render_summary(result, report):
               "原始图片、描述、声明、裁判记录和分数由实验流水线保存在details/。本程序只做离线分析，不改写输入标签。", ""]
     aliases = report.get("judge_id_encoding_counts", {}).get("request_alias", 0)
     if aliases:
-        lines += [f"其中{aliases}条声明因长编号复制错误，使用请求内短编号重新请求并严格映射回原ID；"
-                  "图片、声明、模型和判别指令一致，原失败记录及修复清单保留在details/repairs/case_id_transport/。", ""]
+        lines += [f"其中{aliases}条声明使用请求内短编号，并严格映射回原声明ID；"
+                  "短编号编码本身不表示发生过请求失败或标签修复，相关记录见裁判清单和逐图日志。", ""]
     return "\n".join(lines)
 
 

@@ -89,14 +89,26 @@ def test_old_thresholds_are_not_enabled_by_default():
     assert report["best_f1_negative"]["threshold"] == .1
 
 
-def test_short_id_transport_repairs_are_disclosed_in_results(tmp_path):
+def test_short_ids_are_disclosed_without_inventing_a_repair(tmp_path):
     rows = cases()
     rows[0]["judge_id_encoding"] = "request_alias"
     source, output = tmp_path / "joined.jsonl", tmp_path / "run"
     dump(source, rows)
     result = a.analyze_file(source, output, bootstrap_samples=0)
     assert result["judge_id_encoding_counts"] == {"request_alias": 1, "canonical": 5}
-    assert "1条声明因长编号复制错误" in (output / "results.md").read_text(encoding="utf-8")
+    text = (output / "results.md").read_text(encoding="utf-8")
+    assert "1条声明使用请求内短编号" in text
+    assert "因长编号复制错误" not in text
+
+
+def test_dino_scores_publish_a_detector_specific_heading(tmp_path):
+    rows = cases()
+    for item in rows:
+        item["scores"] = {"dino_max": item["scores"]["global_raw"]}
+    source, output = tmp_path / "joined.jsonl", tmp_path / "run"
+    dump(source, rows)
+    a.analyze_file(source, output, score_key="dino_max", bootstrap_samples=0)
+    assert (output / "results.md").read_text(encoding="utf-8").startswith("# Grounding DINO")
 
 
 def test_missing_dev_class_disables_f1_threshold_and_test_missing_class_only_disables_metric():
