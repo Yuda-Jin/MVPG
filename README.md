@@ -4,7 +4,7 @@
 
 完整方法边界、JSONL 格式、五种更新对照和运行命令见 [声明级视觉反馈说明](mvpg_run/claim_feedback/README.md)。
 
-7B/13B 的真实训练、检查点回读及显存诊断已通过，具体输入边界、数值限制和复现路径见 [云端训练调试报告](docs/server_training_report.md)；benchmark 效果仍待验证。
+7B/13B 的真实训练、检查点回读及显存诊断已通过，具体输入边界、数值限制和复现路径见 [云端训练调试报告](docs/server_training_report.md)。7B 的100步与5000步全套评测已完成，结果见 [5000步评测报告](docs/sa1b_5000step_evaluation_report.md)；当前结果呈混合变化，尚无同协议未训练底模对照。
 
 ## 目录与入口
 
@@ -68,18 +68,17 @@ cp -R llava_setup/LLaVA/llava ./llava
 - AMBER：生成/判别查询、标注和评估。
 - LLaVA-Bench qa90 与其他已有问答/能力评估入口。
 
-`run/eval_all_metrics.sh` 用于当前 LoRA 检查点的评估，新训练生成的 `final/` 可直接作为适配器目录。设置 `MODEL_BASE`、`MODEL_LORA_BASE`、`MODEL_SUFFIX` 和图像路径环境变量后运行；旧 projector 专用启动器已移除。适配器缺失会明确报错，避免误将底模当作训练结果。`run/summarize_eval_results.py` 和评估目录内的汇总脚本继续保留。
+指定检查点即可运行当前的全套16阶段评测：
 
-路径变量包括 `IMAGE_FOLDER_LB`、`IMAGE_FOLDER_POPE`、`IMAGE_DIR_AMBER` 和 `MMHAL_DATA_ROOT`。
-默认 `POPE_CAT=all` 运行三类各 3000 题，AMBER 运行全部 15220 题。
-`RUN_GPT=0` 生成全部回答并计算本地指标（含提供 COCO 标注时的 ObjectHal）；默认 `RUN_GPT=auto`，
-有 `OPENAI_API_KEY` 时调用外部裁判，缺少配置则单独记录待评分阶段，不中断其余评测。
-`ANNOTATION_FILE` 指向 COCO 标注目录。启动器自动读取被 Git 忽略的 `.env`，可参考 `.env.example`；
-`GPT_MODEL` 保存实际裁判名称，使用替代裁判的分数不能直接当作原 GPT-4 结果比较。
-`EVAL_BATCH_SIZE` 默认 1，等长分桶支持批量推理；数值精度及批量设置应在底模与各实验间保持一致。
-完整阶段会校验数量、ID 和来源后复用，独立日志及汇总记录失败、缺失与完成状态。
-评估器保留 `--use-qlora`/
-`--qlora-path` 参数名以兼容原接口，当前加载的是普通 BF16 LoRA。
+```bash
+python run/evaluate_checkpoint.py --checkpoint /path/to/train/checkpoint-005000
+```
+
+入口自动读取底模和实际更新步数，复用被Git忽略的`.env`评分配置。当前云端默认数据目录为`/root/autodl-tmp/data/eval`；其他位置使用`--data-root`指定。
+输出目录只需查看`results.md`（成绩）、`results.json`（程序读取）和`details/`（回答、评分和日志）。重复运行相同命令会校验并复用完整阶段。
+完整参数、已有结果导入及恢复说明见 [评测说明](docs/evaluation.md)。数值精度及批量设置应在底模与各实验间保持一致；替代裁判的分数不能直接当作原GPT-4结果比较。
+
+`run/eval_all_metrics.sh`保留为内部执行器；评分器、原始回答及来源校验继续保留在明细目录中。
 
 图片数据、COCO 标注、部分外部数据和实际权重需要另行准备。GPT 评分通过环境变量配置服务与凭据；运行前检查路径与参数。原始图片和本地权重作为运行资源保留，不是当前分支追踪的实验代码。生成成功和弱反馈统计不能替代 benchmark 指标，也不能证明一般能力保持。
 

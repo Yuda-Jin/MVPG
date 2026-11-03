@@ -32,11 +32,6 @@ GENERATIVE_COLUMNS = (
 DISCRIMINATIVE_COLUMNS = (
     ("pope_adv_accuracy", "POPE adv Acc↑ (%)"),
     ("pope_adv_precision", "Precision↑ (%)"),
-    ("pope_adv_f1", "F1↑ (%)"),
-    ("pope_random_f1", "random F1↑ (%)"),
-    ("pope_popular_f1", "popular F1↑ (%)"),
-    ("amber_discriminative_f1", "AMBER 判别 F1↑"),
-    ("llava_bench_gpt_score", "qa90 相对分数↑"),
 )
 REQUIRED_SCORE_STAGES = {"mmhal_score", "llava_score", "pope_random_score",
     "pope_popular_score", "pope_adversarial_score", "amber_score", "object_score_gpt"}
@@ -355,7 +350,7 @@ def _table(rows, columns):
 def render_markdown(registry):
     lines = ["# 实验对照表", "", "由 `run/compare_experiments.py` 维护；完整原始值、来源路径、SHA256 和设置保存在同目录 `registry.json`。",
         "", "论文原报与本项目实测分开列出，论文行不代表本项目复现。裁判、问题集、对象提取、精度或批量设置不同的结果不能直接比较。",
-        "", "`-` 表示未报告/未评测，不是 0。除 MMHal Score（0–6）和 qa90 相对分数外，表中数值为百分数；JSON 内的 POPE 指标和 MMHal 幻觉率仍为 0–1 比例。",
+        "", "仅展示参考论文表2的十项指标。`-` 表示未报告/未评测，不是0。除MMHal Score（0–6）外，表中数值为百分数；JSON内的POPE指标和MMHal幻觉率仍为0–1比例。",
         "", "训练反馈来源与评测裁判是两个字段。ObjectHal 沿用每行原设置，不能把本地提取和大模型辅助提取混为同一协议。"]
     counters = {"paper_reported": 0, "local_run": 0}
     for kind, title in (("paper_reported", "论文原报（未复现）"), ("local_run", "本项目实测")):
