@@ -89,6 +89,16 @@ def test_old_thresholds_are_not_enabled_by_default():
     assert report["best_f1_negative"]["threshold"] == .1
 
 
+def test_short_id_transport_repairs_are_disclosed_in_results(tmp_path):
+    rows = cases()
+    rows[0]["judge_id_encoding"] = "request_alias"
+    source, output = tmp_path / "joined.jsonl", tmp_path / "run"
+    dump(source, rows)
+    result = a.analyze_file(source, output, bootstrap_samples=0)
+    assert result["judge_id_encoding_counts"] == {"request_alias": 1, "canonical": 5}
+    assert "1条声明因长编号复制错误" in (output / "results.md").read_text(encoding="utf-8")
+
+
 def test_missing_dev_class_disables_f1_threshold_and_test_missing_class_only_disables_metric():
     missing_dev = cases()
     missing_dev[0]["judge_label"] = "supported"

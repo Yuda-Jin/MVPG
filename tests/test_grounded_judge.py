@@ -270,3 +270,115 @@ def test_output_lock_excludes_another_writer(tmp_path):
         with pytest.raises(ValueError, match="Another visual judge"):
             with g.output_lock(path):
                 pass
+
+
+def test_request_aliases_are_bijective_clones_with_no_semantic_edits(tmp_path):
+    original = cases(tmp_path, images=1, claims=3)
+    for index, row in enumerate(original):
+        row["case_id"] = ("abcdef0123456789" * 4)[:-1] + str(index)
+    snapshot = copy.deepcopy(original)
+    encoded, mapping = g.encode_request_cases(original, "request_alias")
+    assert mapping == {f"c{i:04d}": row["case_id"] for i, row in enumerate(original, 1)}
+    assert [row["case_id"] for row in encoded] == ["c0001", "c0002", "c0003"]
+    for source, request_row in zip(original, encoded):
+        assert {k: v for k, v in source.items() if k != "case_id"} == {
+            k: v for k, v in request_row.items() if k != "case_id"}
+    encoded[0]["scores"]["should_not_mutate_source"] = 1
+    assert original == snapshot
+    canonical, identity = g.encode_request_cases(original)
+    assert canonical == original and canonical is not original
+    assert identity == {row["case_id"]: row["case_id"] for row in original}
+    with pytest.raises(ValueError, match="unique"):
+        g.encode_request_cases([original[0], original[0]], "request_alias")
+    with pytest.raises(ValueError, match="encoding"):
+        g.encode_request_cases(original, "unsupported_encoding")
+
+
+def test_default_manifest_and_request_fingerprints_remain_legacy_exact(tmp_path, monkeypatch):
+    original = write_input(tmp_path, images=1)
+    monkeypatch.setattr(g, "ask_image", lambda p, e, k, ids, **kw: result(ids))
+    g.judge_cases(args(tmp_path))  # Old callers have no id_encoding attribute.
+    manifest = json.loads((tmp_path / "judged.jsonl.manifest.json").read_text())
+    assert manifest == {
+        "schema": "image_batch_claim_judge_v1", "grouping": "record_id+resolved_image_path",
+        "input_sha256": d.file_sha256(tmp_path / "cases.jsonl"), "model": "deepseek-flash",
+        "endpoint": d._endpoint("https://judge.example.test/v1"), "prompt_sha256": g._digest(g.BATCH_PROMPT),
+        "image_sha256": {original[0]["image"]: d.file_sha256(original[0]["image"])},
+        "temperature": 0, "max_tokens": 4096, "thinking": "disabled", "image_detail": "original"}
+    journal = d._read_rows(tmp_path / "judged.jsonl.images.progress.jsonl")
+    assert journal[0]["request_fingerprint"] == g._digest({
+        "image_sha256": d.file_sha256(original[0]["image"]), "visible_text": g._visible_text(original)})
+    assert "judge_id_encoding" not in journal[0] and "judge_case_id_map" not in journal[0]
+    rows = d.load_cases(tmp_path / "judged.jsonl")
+    assert all("judge_request_case_id" not in row and row["judge_protocol"] == "image_batch_claim_judge_v1" for row in rows)
+
+
+def test_alias_requests_restore_canonical_ids_and_preserve_actual_raw_responses(tmp_path, monkeypatch):
+    original = write_input(tmp_path, images=2, claims=2)
+    requests = []
+    def ask(payload, endpoint, key, ids, **kwargs):
+        requests.append((payload, list(ids)))
+        assert ids == ["c0001", "c0002"]
+        return result(ids, "uncertain")
+    monkeypatch.setattr(g, "ask_image", ask)
+    assert g.judge_cases(args(tmp_path, id_encoding="request_alias"))["status"] == "complete"
+    rows = d.load_cases(tmp_path / "judged.jsonl")
+    assert [row["case_id"] for row in rows] == [row["case_id"] for row in original]
+    assert [row["judge_request_case_id"] for row in rows] == ["c0001", "c0002", "c0001", "c0002"]
+    assert all(row["judge_label"] == "uncertain" and row["judge_id_encoding"] == "request_alias"
+               and row["judge_protocol"] == "image_batch_claim_judge_v1_request_alias" for row in rows)
+    journal = d._read_rows(tmp_path / "judged.jsonl.images.progress.jsonl")
+    for entry in journal:
+        assert set(entry["judge_case_id_map"]) == {"c0001", "c0002"}
+        assert set(entry["judge_case_id_map"].values()) == set(entry["case_ids"])
+        assert [j["case_id"] for j in entry["judgments"]] == entry["case_ids"]
+        assert [j["case_id"] for j in json.loads(entry["judge_raw_text"])["judgments"]] == ["c0001", "c0002"]
+        assert entry["judge_raw_response"] == json.dumps({"provider": "actual", "content": entry["judge_raw_text"]})
+    for payload, _ in requests:
+        visible = json.loads(payload["messages"][1]["content"][0]["text"])
+        image_cases = [row for row in original if row["record_id"] == visible["answers"][0]["record_id"]]
+        encoded, _ = g.encode_request_cases(image_cases, "request_alias")
+        assert payload == g.judge_payload(encoded, model="deepseek-flash", thinking="disabled")
+    assert json.loads((tmp_path / "judged.jsonl.manifest.json").read_text())["case_id_encoding"] == "request_alias"
+
+
+@pytest.mark.parametrize("bad_ids", [["c0001", "c0003"], ["c0001", "c0001"], ["0:0", "0:1"], ["c0001"]])
+def test_bad_returned_aliases_are_never_fuzzily_matched_or_labeled(tmp_path, monkeypatch, bad_ids):
+    write_input(tmp_path, images=1)
+    real_ask = g.ask_image
+    def ask(payload, endpoint, key, ids, **kwargs):
+        return real_ask(payload, endpoint, key, ids, opener=lambda *a, **k: response(bad_ids), **kwargs)
+    monkeypatch.setattr(g, "ask_image", ask)
+    summary = g.judge_cases(args(tmp_path, id_encoding="request_alias"))
+    assert summary["status"] == "incomplete" and summary["cases_judged"] == 0
+    assert all(row["judge_label"] is None and row["judge_error"] == "ValueError"
+               for row in d.load_cases(tmp_path / "judged.jsonl"))
+
+
+def test_alias_resume_validates_encoding_mapping_and_reuses_successes(tmp_path, monkeypatch):
+    write_input(tmp_path, images=1)
+    monkeypatch.setattr(g, "ask_image", lambda p, e, k, ids, **kw: result(ids))
+    g.judge_cases(args(tmp_path, id_encoding="request_alias"))
+    monkeypatch.setattr(g, "ask_image", lambda *a, **k: pytest.fail("Completed alias request must be reused"))
+    assert g.judge_cases(args(tmp_path, resume=True, id_encoding="request_alias"))["status"] == "complete"
+    with pytest.raises(ValueError, match="manifest differs"):
+        g.judge_cases(args(tmp_path, resume=True))
+    path = tmp_path / "judged.jsonl.images.progress.jsonl"
+    entries = d._read_rows(path)
+    entries[0]["judge_case_id_map"]["c0001"] = "another-canonical-id"
+    path.write_text("".join(json.dumps(row) + "\n" for row in entries), encoding="utf-8")
+    with pytest.raises(ValueError, match="mapping differs"):
+        g.judge_cases(args(tmp_path, resume=True, id_encoding="request_alias"))
+
+
+def test_composite_repaired_master_cannot_be_overwritten_by_legacy_resume(tmp_path, monkeypatch):
+    write_input(tmp_path)
+    monkeypatch.setattr(g, "ask_image", lambda p, e, k, ids, **kw: result(ids))
+    g.judge_cases(args(tmp_path))
+    master = tmp_path / "judged.jsonl"
+    before = master.read_bytes()
+    Path(str(master) + ".repair_manifest.json").write_text('{"composite":true}', encoding="utf-8")
+    monkeypatch.setattr(g, "ask_image", lambda *a, **k: pytest.fail("Read-only composite must not request"))
+    with pytest.raises(ValueError, match="Composite-repaired"):
+        g.judge_cases(args(tmp_path, resume=True))
+    assert master.read_bytes() == before

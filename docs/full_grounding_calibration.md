@@ -71,6 +71,13 @@ python run/recover_grounding_judge.py --run /root/autodl-tmp/output/EXPERIMENT -
 ID校验保持一致。重试预算跨监督器重启保留；认证、图片变更、计分失败等情况不自动重跑。
 恢复状态和尝试历史保存在`details/judge_recovery.json`。
 
+少数裁判可能反复抄错64字符声明编号。对此仅将失败图片的请求编号改为`c0001`等短别名，
+再次看图判别并严格映射回原编号，不近似匹配旧错误编号。独立输入、请求清单、原始回复、
+原失败结果及合并校验保存在`details/repairs/case_id_transport/`，主判别文件附带修复清单。
+这是记录在案的编号传输变体；图片、声明、判别指令、模型与分数设置不变。报告单列其数量。
+修复脚本`run/repair_grounding_judge_ids.py`仅替换原失败声明，随后直接合并与分析，
+原始判别程序拒绝覆盖已合成修复的主文件。
+
 结果目录只需查看：
 
 ```text

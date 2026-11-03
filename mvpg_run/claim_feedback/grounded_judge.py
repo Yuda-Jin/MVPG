@@ -89,6 +89,25 @@ def _visible_text(cases):
     return {"answers": list(records.values()), "claims": claims}
 
 
+def encode_request_cases(cases, encoding="canonical"):
+    """Clone one image's claims and assign exact, request-local transport IDs.
+
+    Canonical IDs stay authoritative in saved cases. Short aliases only avoid
+    asking a visual model to copy long hashes; they do not relax ID validation
+    or infer which claim an unknown returned ID was intended to identify.
+    """
+    if encoding not in ("canonical", "request_alias"):
+        raise ValueError("Unknown judge case-ID encoding")
+    canonical = [case.get("case_id") for case in cases]
+    if any(not isinstance(cid, str) or not cid for cid in canonical) or len(set(canonical)) != len(canonical):
+        raise ValueError("Request case IDs must be unique nonempty strings")
+    result = copy.deepcopy(cases)
+    identifiers = canonical if encoding == "canonical" else [f"c{i:04d}" for i in range(1, len(cases) + 1)]
+    for case, identifier in zip(result, identifiers):
+        case["case_id"] = identifier
+    return result, dict(zip(identifiers, canonical))
+
+
 def judge_payload(cases, *, model, image_root=".", thinking=None,
                   max_output_tokens=4096, image_detail="original"):
     if not cases:
@@ -233,8 +252,17 @@ def _read_journal(path):
 
 
 def _successful(entry, case_ids):
-    return entry.get("judge_error") is None and isinstance(entry.get("judgments"), list) and (
-        parse_judgments(entry.get("judge_raw_text"), case_ids) == entry["judgments"])
+    if entry.get("judge_error") is not None or not isinstance(entry.get("judgments"), list):
+        return False
+    if entry.get("judge_id_encoding") == "request_alias":
+        mapping = entry.get("judge_case_id_map")
+        if (not isinstance(mapping, dict) or len(mapping) != len(case_ids)
+                or list(mapping.values()) != list(case_ids)):
+            return False
+        rows = parse_judgments(entry.get("judge_raw_text"), list(mapping))
+        restored = [dict(row, case_id=mapping[row["case_id"]]) for row in rows]
+        return restored == entry["judgments"]
+    return parse_judgments(entry.get("judge_raw_text"), case_ids) == entry["judgments"]
 
 
 def judge_cases(args):
@@ -253,21 +281,33 @@ def judge_cases(args):
     thinking = os.getenv("JUDGE_THINKING") if args.model.lower().startswith("deepseek-") else None
     if thinking not in (None, "", "enabled", "disabled"):
         raise ValueError("JUDGE_THINKING must be enabled or disabled")
+    encoding = getattr(args, "id_encoding", "canonical")
     groups = group_cases(cases, args.image_root)
     by_key = {g["image_key"]: g for g in groups}
+    by_case = {}
     image_hashes = {p: file_sha256(p) for p in sorted({g["image_path"] for g in groups})}
     for group in groups:
-        visible = _visible_text(group["cases"])
+        request_cases, id_map = encode_request_cases(group["cases"], encoding)
+        group.update(request_cases=request_cases, request_id_map=id_map, request_case_ids=list(id_map))
+        group["canonical_to_request_id"] = {canonical: alias for alias, canonical in id_map.items()}
+        visible = _visible_text(request_cases)
         group["case_ids"] = [c["case_id"] for c in group["cases"]]
-        group["request_fingerprint"] = _digest({"image_sha256": image_hashes[group["image_path"]],
-                                                  "visible_text": visible})
+        by_case.update((cid, group) for cid in group["case_ids"])
+        request_identity = {"image_sha256": image_hashes[group["image_path"]], "visible_text": visible}
+        if encoding != "canonical":
+            request_identity.update(case_id_encoding=encoding, alias_to_canonical=id_map)
+        group["request_fingerprint"] = _digest(request_identity)
     manifest = {"schema": "image_batch_claim_judge_v1", "grouping": "record_id+resolved_image_path",
                 "input_sha256": file_sha256(args.input),
                 "model": args.model, "endpoint": endpoint, "prompt_sha256": _digest(BATCH_PROMPT),
                 "image_sha256": image_hashes, "temperature": 0,
                 "max_tokens": args.max_output_tokens, "thinking": thinking or None,
                 "image_detail": args.image_detail}
+    if encoding != "canonical":
+        manifest["case_id_encoding"] = encoding
     output = Path(args.output)
+    if Path(str(output) + ".repair_manifest.json").exists():
+        raise ValueError("Composite-repaired judge output is read-only; use its recorded repair workflow")
     output.parent.mkdir(parents=True, exist_ok=True)
     manifest_path = Path(str(output) + ".manifest.json")
     journal_path = Path(str(output) + ".images.progress.jsonl")
@@ -284,6 +324,9 @@ def judge_cases(args):
                 if (group is None or row.get("request_fingerprint") != group["request_fingerprint"]
                         or row.get("case_ids") != group["case_ids"]):
                     raise ValueError("Judge journal does not match the current image claims")
+                if encoding != "canonical" and (row.get("judge_id_encoding") != encoding
+                        or row.get("judge_case_id_map") != group["request_id_map"]):
+                    raise ValueError("Judge journal request-ID mapping differs")
                 if row.get("judge_error") is None and not _successful(row, group["case_ids"]):
                     raise ValueError("Invalid successful judge journal entry")
                 latest[row["image_key"]] = row
@@ -301,11 +344,20 @@ def judge_cases(args):
                 result = {"judgments": None, "judge_error": "ImageChanged",
                           "judge_fatal_error": True, "judge_request_attempts": 0}
             else:
-                payload = judge_payload(group["cases"], model=args.model,
+                payload = judge_payload(group["request_cases"], model=args.model,
                     image_root=args.image_root, thinking=thinking,
                     max_output_tokens=args.max_output_tokens, image_detail=args.image_detail)
-                result = ask_image(payload, endpoint, key, group["case_ids"],
+                result = ask_image(payload, endpoint, key, group["request_case_ids"],
                                    timeout=args.timeout, max_retries=args.max_retries)
+                if encoding != "canonical" and result.get("judge_error") is None:
+                    # Validate the exact alias set before mapping; retain the
+                    # provider's unmodified raw response separately for audit.
+                    request_rows = parse_judgments(json.dumps({"judgments": result["judgments"]}),
+                                                   group["request_case_ids"])
+                    result["judgments"] = [dict(row, case_id=group["request_id_map"][row["case_id"]])
+                                           for row in request_rows]
+            if encoding != "canonical":
+                result.update(judge_id_encoding=encoding, judge_case_id_map=group["request_id_map"])
             return dict(result, image_key=group["image_key"], image_path=group["image_path"],
                         case_ids=group["case_ids"], request_fingerprint=group["request_fingerprint"],
                         judge_model=args.model, judge_prompt_sha256=manifest["prompt_sha256"],
@@ -357,6 +409,8 @@ def judge_cases(args):
                                    "judgments": None, "judge_request_attempts": 0,
                                    "judge_started_utc": _now(), "judge_finished_utc": _now(),
                                    "judge_attempt": latest.get(group["image_key"], {}).get("judge_attempt", 0) + 1}
+                            if encoding != "canonical":
+                                row.update(judge_id_encoding=encoding, judge_case_id_map=group["request_id_map"])
                         journal.write(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n")
                         journal.flush(); os.fsync(journal.fileno())
                         latest[group["image_key"]] = row
@@ -390,6 +444,9 @@ def judge_cases(args):
                 row.pop("judge", None)
             row.update(judge_model=args.model, judge_prompt_sha256=manifest["prompt_sha256"],
                        judge_protocol="image_batch_claim_judge_v1", judge_input_sha256=_digest(case))
+            if encoding != "canonical":
+                row.update(judge_id_encoding=encoding, judge_request_case_id=by_case[cid]["canonical_to_request_id"][cid],
+                           judge_protocol="image_batch_claim_judge_v1_request_alias")
             if entry:
                 for name in ("judge_response_model", "judge_request_id", "judge_request_attempts",
                              "judge_started_utc", "judge_finished_utc", "judge_attempt"):
@@ -412,6 +469,7 @@ def build_parser():
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--model", required=True)
+    parser.add_argument("--id-encoding", choices=("canonical", "request_alias"), default="canonical")
     parser.add_argument("--image-root", default=".")
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--base-url-env", default="OPENAI_ENDPOINT")

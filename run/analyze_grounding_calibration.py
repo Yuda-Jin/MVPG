@@ -185,6 +185,7 @@ def build_report(cases, *, score_key="global_raw", target_precision=.95, min_sel
     return {"schema": "grounding_calibration_analysis_v1", "reference": "visual_judge_silver_labels",
             "scope": "formal dev/test image groups only; retrospective cases excluded from all threshold selection and test metrics",
             "corpus": corpus, "best_f1_negative": best, "high_precision_analysis": report,
+            "judge_id_encoding_counts": dict(Counter(c.get("judge_id_encoding", "canonical") for c in cases)),
             "definitions": {
                 "f1": "Unsupported is the positive class; score <= threshold. Uncertain cases are excluded from F1/confusion, never counted as truth-negative or false-positive.",
                 "conservative_precision": "Correct selected labels divided by all selected cases, including unconfirmed uncertain labels.",
@@ -238,6 +239,10 @@ def render_summary(result, report):
               "开发集Wilson筛选不是阈值搜索后的统计保证；冻结测试的按图bootstrap区间、各极性精度/召回/覆盖率见`details/analysis_report.json`。", "",
               "没有可用候选的图片以及原始候选到可对齐子集的覆盖率，应结合上游图片/解析清单查看；这里不将空图片静默当作已评估声明。", "",
               "原始图片、描述、声明、裁判记录和分数由实验流水线保存在details/。本程序只做离线分析，不改写输入标签。", ""]
+    aliases = report.get("judge_id_encoding_counts", {}).get("request_alias", 0)
+    if aliases:
+        lines += [f"其中{aliases}条声明因长编号复制错误，使用请求内短编号重新请求并严格映射回原ID；"
+                  "图片、声明、模型和判别指令一致，原失败记录及修复清单保留在details/repairs/case_id_transport/。", ""]
     return "\n".join(lines)
 
 
@@ -354,6 +359,7 @@ def analyze_file(input_path, output_dir, *, plots=False, **options):
               "best_f1_negative": report["best_f1_negative"],
               "strict_policy": hp["strict_policy"], "exploratory_policy": hp["exploratory_policy"],
               "current_policy": hp.get("current_policy"), "formal_splits": hp["splits"],
+              "judge_id_encoding_counts": report["judge_id_encoding_counts"],
               "details": "details/analysis_report.json", "plots": plot_info}
     report["plots"] = plot_info
     # Invalid formal input or calibration errors above leave existing progress
