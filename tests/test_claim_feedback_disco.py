@@ -264,6 +264,45 @@ def test_real_public_api_seed_refine_merge_contract_is_used_lazily(paths, offici
     assert calls["load"] == [repo]
 
 
+def test_empty_generated_slots_are_audited_without_changing_refiner_graphs(paths, official_fakes):
+    repo, checkpoint = paths
+    calls, modules = official_fakes
+    raw = [["dog", "beside", "chair"], ["people", "is", ""], [" ", "is", "tall"]]
+    before = copy.deepcopy(raw)
+    modules[2].merge_delete_insert_results = lambda **kwargs: (copy.deepcopy(raw), "original malformed graph")
+    parser = DiscoSGDecomposer(repo, "seed", checkpoint, rounds=3)
+    result = parser.decompose(response_record())
+    assert raw == before
+    assert set(by_entity(result["claims"])) == {"dog", "chair"}
+    assert all(c["label"] == "?" and c["weight"] == 0 for c in result["claims"])
+    graph = result["disco_graph"]
+    assert graph["triples"] == [["dog", "beside", "chair"]]
+    assert len(graph["rejected_triples"]) == 6
+    assert graph["refinement_rounds"][0]["raw_merged_triples"] == raw
+    assert graph["refinement_rounds"][0]["rejected_triples"][0]["empty_slots"] == [2]
+    assert calls["refine"][1]["graph_to_fix"][response_record()["response"]] == "original malformed graph"
+    assert result["metadata"]["decomposer"]["malformed_triple_policy"] == "audit_and_exclude_empty_string_slots_v1"
+
+
+def test_all_empty_generated_triples_produce_no_visual_labels(paths, official_fakes):
+    repo, checkpoint = paths
+    _, modules = official_fakes
+    modules[2].merge_delete_insert_results = lambda **kwargs: ([["people", "is", ""]], "raw graph")
+    result = DiscoSGDecomposer(repo, "seed", checkpoint, rounds=1).decompose(response_record())
+    assert result["claims"] == []
+    assert result["disco_graph"]["triples"] == []
+    assert result["disco_graph"]["rejected_triples"][0]["triple"] == ["people", "is", ""]
+
+
+@pytest.mark.parametrize("raw", ["wrong container", [["dog", "is"]], [["dog", "is", None]]])
+def test_generated_graph_interface_errors_still_fail(paths, official_fakes, raw):
+    repo, checkpoint = paths
+    _, modules = official_fakes
+    modules[2].merge_delete_insert_results = lambda **kwargs: (raw, "raw graph")
+    with pytest.raises(ValueError, match="triple"):
+        DiscoSGDecomposer(repo, "seed", checkpoint, rounds=1).decompose(response_record())
+
+
 def test_missing_checkpoint_classifier_fails_before_loading_models(paths, monkeypatch):
     repo, checkpoint = paths
     (checkpoint / "classifier.pt").unlink()

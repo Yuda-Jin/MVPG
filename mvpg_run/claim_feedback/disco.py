@@ -93,6 +93,29 @@ def _normalize_triples(triples: Sequence[Sequence[str]]) -> list[list[str]]:
     return [list(triple) for triple in sorted(normalized)]
 
 
+def _parser_triples(triples: Sequence[Sequence[str]]) -> tuple[list[list[str]], list[dict[str, Any]]]:
+    """Audit empty slots from generated graphs without relaxing input contracts.
+
+    The released graph extractor can return e.g. (people, is, ""). These
+    incomplete propositions cannot support visual labels. Preserve their raw
+    slots and positions separately; unexpected container/slot types still fail.
+    """
+    if isinstance(triples, (str, bytes)) or not isinstance(triples, Sequence):
+        raise ValueError("DiscoSG triples must be a sequence of three-string triples")
+    valid, rejected = [], []
+    for index, triple in enumerate(triples):
+        if (isinstance(triple, (str, bytes)) or not isinstance(triple, Sequence)
+                or len(triple) != 3 or any(not isinstance(part, str) for part in triple)):
+            raise ValueError("each DiscoSG triple must contain three string slots")
+        empty_slots = [slot for slot, part in enumerate(triple) if not part.strip()]
+        if empty_slots:
+            rejected.append({"triple_index": index, "triple": list(triple),
+                             "reason": "empty_triple_slot", "empty_slots": empty_slots})
+        else:
+            valid.append(triple)
+    return _normalize_triples(valid), rejected
+
+
 def _word_character(char: str) -> bool:
     return char.isalnum() or char == "_" or char in "-\u2010\u2011"
 
@@ -372,6 +395,7 @@ class DiscoSGDecomposer:
                 "deletion_classifier": str(self.refiner_model / "classifier.pt"),
             },
             "projection": "exact_unique_object_existence_only",
+            "malformed_triple_policy": "audit_and_exclude_empty_string_slots_v1",
             "task": "delete_before_insert", "decoding": "deterministic",
             **self.limits,
         }
@@ -447,7 +471,8 @@ class DiscoSGDecomposer:
             raise RuntimeError("Official DiscoSG seed parser must return one graph string per response")
         seed_graph = graph = seeds[0]
         triples: list[list[str]] = []
-        for _ in range(self.limits["rounds"]):
+        history = []
+        for round_index in range(self.limits["rounds"]):
             if callable(getattr(self._triple_tools, "extract_triples", None)):
                 if len(self._triple_tools.extract_triples(graph)) > self.limits["max_triples_num"]:
                     raise ValueError("DiscoSG graph exceeds max_triples_num; refusing silent triple truncation")
@@ -475,12 +500,18 @@ class DiscoSGDecomposer:
             merged, graph = self._triple_tools.merge_delete_insert_results(
                 insert_res=insert_result, delete_res=delete_result,
             )
-            triples = _normalize_triples(merged)
             if not isinstance(graph, str):
                 raise RuntimeError("DiscoSG graph merger must return (triples, graph_string)")
+            triples, rejected = _parser_triples(merged)
+            history.append({"round": round_index + 1, "delete_result": delete_result,
+                "insert_result": insert_result, "raw_merged_triples": copy.deepcopy(merged),
+                "merged_graph": graph, "rejected_triples": rejected})
         out["claims"] = build_object_claims(response, triples)
         out["disco_graph"] = {
             "triples": triples, "seed_graph": seed_graph, "refined_graph": graph,
+            "refinement_rounds": history,
+            "rejected_triples": [dict(item, round=step["round"])
+                                 for step in history for item in step["rejected_triples"]],
             "unresolved_facts": [
                 {"triple": triple, "reason": "attribute_and_relation_training_not_implemented"}
                 for triple in triples

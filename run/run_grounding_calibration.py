@@ -92,6 +92,11 @@ def prepare(root, plan):
              "raw_claims": sum(len(r["claims"]) for r in records),
              "excluded_claim_reasons": initial_audit["excluded_candidates"], "roles": per_role,
              "scope": "Source-aligned affirmative object-existence subset; raw scene graphs and all images remain persisted"}
+    audit["parser_integrity"] = {
+        "records_with_rejected_triples": sum(bool(r.get("disco_graph", {}).get("rejected_triples")) for r in records),
+        "rejected_triple_occurrences_across_rounds": sum(len(r.get("disco_graph", {}).get("rejected_triples", [])) for r in records),
+        "note": "Empty generated triple slots are retained in raw round history and excluded from claims; they are never visual negatives."
+    }
     payload = rows_bytes(cases)
     audit["cases_sha256"] = hashlib.sha256(payload).hexdigest()
     immutable_bytes(details / "cases.jsonl", payload)
